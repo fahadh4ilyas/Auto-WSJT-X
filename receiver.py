@@ -144,15 +144,15 @@ def process_wsjt(data, ip_from: tuple, states: States):
                     message_types = types
                     break
             if message_types == 'CQ':
-                logging.info(f'[TX] [BAND: {states.band}] [FREQUENCY: {states.txdf}] CQ at {matching["grid"]}')
+                logging.info(f'[TX] [BAND: {states.band}] [FREQUENCY: {states.txdf}] {message}')
             elif message_types == 'REPLY':
-                logging.info(f'[TX] [BAND: {states.band}] [FREQUENCY: {states.txdf}] Message to {matching["complete_to"]} at {matching["grid"]}')
+                logging.info(f'[TX] [BAND: {states.band}] [FREQUENCY: {states.txdf}] {message}')
             elif message_types == 'R73':
-                logging.info(f'[TX] [BAND: {states.band}] [FREQUENCY: {states.txdf}] Last message to {matching["complete_to"]}: {matching["R73"]}')
+                logging.info(f'[TX] [BAND: {states.band}] [FREQUENCY: {states.txdf}] {message}')
             elif message_types == 'SNR':
-                logging.info(f'[TX] [BAND: {states.band}] [FREQUENCY: {states.txdf}] Message to {matching["complete_to"]}: {matching["snr"]}')
+                logging.info(f'[TX] [BAND: {states.band}] [FREQUENCY: {states.txdf}] {message}')
             elif message_types == 'RSNR':
-                logging.info(f'[TX] [BAND: {states.band}] [FREQUENCY: {states.txdf}] Message to {matching["complete_to"]}: R{matching["snr"]}')
+                logging.info(f'[TX] [BAND: {states.band}] [FREQUENCY: {states.txdf}] {message}')
 
         if isDifferent:
             states.last_tx = packet_last_tx
