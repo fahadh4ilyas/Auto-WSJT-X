@@ -13,6 +13,7 @@ This is a script to automate ft8 using WSJT-X that already modified that can be 
 ### Environment (.env)
 * `WSJTX_IP`, IP of UDP connection from WSJT-X
 * `WSJTX_PORT`, Port of UDP connection from WSJT-X
+* `MULTICAST`, set `TRUE` if multicast enabled from WSJT-X
 * `MONGO_HOST`, IP of MongoDB database
 * `MONGO_PORT`, Port of MOngoDB database
 * `REDIS_HOST`, IP of Redis database
