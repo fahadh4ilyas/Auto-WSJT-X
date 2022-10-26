@@ -1,0 +1,6 @@
+adif-io
+pyhamtools
+pymongo
+python-dotenv
+redis
+tqdm
