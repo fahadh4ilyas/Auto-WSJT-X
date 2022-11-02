@@ -143,16 +143,7 @@ def process_wsjt(data, ip_from: tuple, states: States):
                 if matching:
                     message_types = types
                     break
-            if message_types == 'CQ':
-                logging.info(f'[TX] [BAND: {states.band}] [FREQUENCY: {states.txdf}] {message}')
-            elif message_types == 'REPLY':
-                logging.info(f'[TX] [BAND: {states.band}] [FREQUENCY: {states.txdf}] {message}')
-            elif message_types == 'R73':
-                logging.info(f'[TX] [BAND: {states.band}] [FREQUENCY: {states.txdf}] {message}')
-            elif message_types == 'SNR':
-                logging.info(f'[TX] [BAND: {states.band}] [FREQUENCY: {states.txdf}] {message}')
-            elif message_types == 'RSNR':
-                logging.info(f'[TX] [BAND: {states.band}] [FREQUENCY: {states.txdf}] {message}')
+            logging.info(f'[TX] [BAND: {states.band}] [FREQUENCY: {states.txdf}] {message}')
 
         if isDifferent:
             states.last_tx = packet_last_tx
