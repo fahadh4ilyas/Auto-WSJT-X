@@ -50,7 +50,7 @@ def main(data_str: str):
     t = adif_io.read_from_string(data_str)
 
     data, _ = typing.cast(
-        typing.List[
+        typing.Tuple[
             typing.List[typing.Dict[str, typing.Any]],
             typing.Dict[str, typing.Any]
         ],
