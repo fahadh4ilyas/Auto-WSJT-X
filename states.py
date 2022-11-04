@@ -57,13 +57,13 @@ class States(object):
     def num_inactive_before_cut(self, val: int):
         self.r.set('num_inactive_before_cut', val)
 
-    @property
-    def next_callsign(self) -> str:
-        return (self.r.get('next_callsign') or b'').decode()
+    # @property
+    # def next_callsign(self) -> str:
+    #     return (self.r.get('next_callsign') or b'').decode()
     
-    @next_callsign.setter
-    def next_callsign(self, val: str):
-        self.r.set('next_callsign', val)
+    # @next_callsign.setter
+    # def next_callsign(self, val: str):
+    #     self.r.set('next_callsign', val)
 
     @property
     def my_callsign(self) -> str:
@@ -104,6 +104,14 @@ class States(object):
     @band.setter
     def band(self, val: int):
         self.r.set('band', val)
+
+    @property
+    def mode(self) -> str:
+        return (self.r.get('mode') or b'').decode()
+    
+    @mode.setter
+    def mode(self, val: str):
+        self.r.set('mode', val)
 
     @property
     def odd_frequencies(self) -> list:
@@ -171,21 +179,21 @@ class States(object):
     def min_db(self, val: int):
         self.r.set('min_db', val)
 
-    @property
-    def include_no_grid_cq(self) -> bool:
-        return not not self.r.get('include_no_grid_cq')
+    # @property
+    # def include_no_grid_cq(self) -> bool:
+    #     return not not self.r.get('include_no_grid_cq')
     
-    @include_no_grid_cq.setter
-    def include_no_grid_cq(self, val: bool):
-        self.r.set('include_no_grid_cq', 1 if val else '')
+    # @include_no_grid_cq.setter
+    # def include_no_grid_cq(self, val: bool):
+    #     self.r.set('include_no_grid_cq', 1 if val else '')
 
-    @property
-    def include_callsign_with_affix(self) -> bool:
-        return not not self.r.get('include_callsign_with_affix')
+    # @property
+    # def include_callsign_with_affix(self) -> bool:
+    #     return not not self.r.get('include_callsign_with_affix')
     
-    @include_callsign_with_affix.setter
-    def include_callsign_with_affix(self, val: bool):
-        self.r.set('include_callsign_with_affix', 1 if val else '')
+    # @include_callsign_with_affix.setter
+    # def include_callsign_with_affix(self, val: bool):
+    #     self.r.set('include_callsign_with_affix', 1 if val else '')
 
     @property
     def new_grid(self) -> bool:
@@ -203,21 +211,21 @@ class States(object):
     def new_dxcc(self, val: bool):
         self.r.set('new_dxcc', 1 if val else '')
 
-    @property
-    def rr73_as_cq(self) -> bool:
-        return not not self.r.get('rr73_as_cq')
+    # @property
+    # def rr73_as_cq(self) -> bool:
+    #     return not not self.r.get('rr73_as_cq')
     
-    @rr73_as_cq.setter
-    def rr73_as_cq(self, val: bool):
-        self.r.set('rr73_as_cq', 1 if val else '')
+    # @rr73_as_cq.setter
+    # def rr73_as_cq(self, val: bool):
+    #     self.r.set('rr73_as_cq', 1 if val else '')
 
-    @property
-    def max_force_reply_when_busy(self) -> int:
-        return int(self.r.get('max_force_reply_when_busy') or 0)
+    # @property
+    # def max_force_reply_when_busy(self) -> int:
+    #     return int(self.r.get('max_force_reply_when_busy') or 0)
     
-    @max_force_reply_when_busy.setter
-    def max_force_reply_when_busy(self, val: int):
-        self.r.set('max_force_reply_when_busy', val)
+    # @max_force_reply_when_busy.setter
+    # def max_force_reply_when_busy(self, val: int):
+    #     self.r.set('max_force_reply_when_busy', val)
     
     @property
     def tx_enabled(self) -> bool:

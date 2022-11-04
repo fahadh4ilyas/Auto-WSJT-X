@@ -1,0 +1,340 @@
+DPR of Korea
+Bouvet
+Crozet Island
+Scarborough Reef
+San Felix & San Ambrosio
+Pratas Island
+Kure Island
+Johnston Island
+Peter 1 Island
+Glorioso Islands
+Kerguelen Islands
+Aves Island
+Macquarie Island
+Pr. Edward & Marion Is.
+Midway Island
+St. Peter & St. Paul
+Trindade & Martim Vaz
+Desecheo Island
+South Sandwich Islands
+Palmyra & Jarvis Islands
+N.Z. Subantarctic Is.
+Chesterfield Islands
+Turkmenistan
+Heard Island
+Syria
+Tromelin Island
+Kermadec Islands
+Minami Torishima
+Swains Island
+Baker & Howland Islands
+Revillagigedo
+South Georgia Island
+Wake Island
+Banaba Island
+Mount Athos
+Mellish Reef
+Willis Island
+Central Kiribati
+Clipperton Island
+Juan de Nova, Europa
+Cocos Island
+Malpelo Island
+Navassa Island
+Tristan da Cunha & Gough Islands
+Amsterdam & St. Paul Is.
+Temotu Province
+Yemen
+South Orkney Islands
+Myanmar
+Sable Island
+Spratly Islands
+Lakshadweep Islands
+Conway Reef
+Tokelau Islands
+Agalega & St. Brandon
+Annobon Island
+Equatorial Guinea
+Ducie Island
+Franz Josef Land
+Somalia
+Nauru
+Marquesas Islands
+Andaman & Nicobar Is.
+Burundi
+Tuvalu
+Western Kiribati
+North Cook Islands
+American Samoa
+Lord Howe Island
+Timor - Leste
+Juan Fernandez Islands
+St. Paul Island
+Cocos (Keeling) Islands
+United Nations HQ
+Solomon Islands
+Pitcairn Island
+Eritrea
+Austral Islands
+Christmas Island
+Rotuma Island
+Republic of the Congo
+Eastern Kiribati
+Libya
+Niue
+Niger
+Chagos Islands
+Wallis & Futuna Islands
+Chad
+Jan Mayen
+Chatham Islands
+Bangladesh
+Micronesia
+Sov Mil Order of Malta
+Easter Island
+Bhutan
+Sierra Leone
+Central African Republic
+Cameroon
+Republic of South Sudan
+Vanuatu
+Macao
+Mayotte
+Tonga
+St. Barthelemy
+Comoros
+Cambodia
+Dem. Rep. of the Congo
+Ethiopia
+Guinea
+Vatican City
+Marshall Islands
+Togo
+Laos
+Benin
+South Shetland Islands
+Botswana
+Guyana
+Palestine
+Palau
+Djibouti
+St. Pierre & Miquelon
+Republic of Kosovo
+Guantanamo Bay
+St. Vincent
+British Virgin Islands
+Guinea-Bissau
+ITU HQ
+Ogasawara
+Fernando de Noronha
+Nepal
+Papua New Guinea
+Rwanda
+Norfolk Island
+Lesotho
+Saba & St. Eustatius
+Sudan
+Mozambique
+Uganda
+Burkina Faso
+Iraq
+Cote d'Ivoire
+Nigeria
+San Andres & Providencia
+Galapagos Islands
+Mali
+Iran
+Ascension Island
+Sint Maarten
+Zimbabwe
+Liberia
+Sao Tome & Principe
+Samoa
+Brunei Darussalam
+Maldives
+Kingdom of Eswatini
+French Polynesia
+Montserrat
+South Cook Islands
+UK Base Areas on Cyprus
+Mariana Islands
+Madagascar
+Market Reef
+Afghanistan
+Grenada
+Monaco
+Tanzania
+Angola
+Haiti
+Malawi
+St. Martin
+The Gambia
+Tunisia
+Rodriguez Island
+El Salvador
+Pakistan
+Zambia
+Seychelles
+Bermuda
+Western Sahara
+Egypt
+Antigua & Barbuda
+Nicaragua
+Senegal
+Turks & Caicos Islands
+Tajikistan
+St. Kitts & Nevis
+Honduras
+Vietnam
+Bahamas
+Gabon
+Bolivia
+St. Helena
+Fiji
+Sri Lanka
+Ghana
+East Malaysia
+Jordan
+Dominica
+Singapore
+Mauritius
+Antarctica
+Anguilla
+French Guiana
+Svalbard
+Jamaica
+Falkland Islands
+Guam
+Faroe Islands
+Guatemala
+Albania
+Greenland
+Mauritania
+Bahrain
+Reunion Island
+Cape Verde
+Kenya
+San Marino
+Andorra
+Gibraltar
+New Caledonia
+Kyrgyzstan
+Namibia
+Mongolia
+Uzbekistan
+Suriname
+Cayman Islands
+Peru
+Armenia
+Liechtenstein
+West Malaysia
+Martinique
+St. Lucia
+Bonaire
+Qatar
+Azerbaijan
+Curacao
+Hong Kong
+Taiwan
+Algeria
+Philippines
+Belize
+Aland Islands
+Paraguay
+Aruba
+Guadeloupe
+Barbados
+Panama
+Guernsey
+Montenegro
+Trinidad & Tobago
+Jersey
+Isle of Man
+Georgia
+Dodecanese
+Costa Rica
+Lebanon
+Corsica
+India
+Saudi Arabia
+US Virgin Islands
+Morocco
+Ecuador
+Malta
+Thailand
+Hawaii
+Oman
+Dominican Republic
+Ceuta & Melilla
+United Arab Emirates
+Republic of Korea
+Alaska
+Kuwait
+Iceland
+Crete
+Mexico
+Colombia
+Uruguay
+China
+Chile
+North Macedonia
+Kaliningrad
+Madeira Islands
+Moldova
+Cuba
+New Zealand
+South Africa
+Asiatic Turkey
+Cyprus
+Azores
+Indonesia
+Venezuela
+Luxembourg
+Sardinia
+Balearic Islands
+Puerto Rico
+Kazakhstan
+Northern Ireland
+Israel
+Argentina
+Wales
+Australia
+Latvia
+Estonia
+Ireland
+Bosnia-Herzegovina
+Belarus
+Scotland
+Canary Islands
+Norway
+Portugal
+Lithuania
+Serbia
+Denmark
+Slovak Republic
+Brazil
+Greece
+Romania
+Switzerland
+Japan
+Bulgaria
+Sweden
+Austria
+Asiatic Russia
+Finland
+Croatia
+Canada
+Czech Republic
+Netherlands
+Belgium
+Slovenia
+Hungary
+Ukraine
+England
+Poland
+Spain
+France
+European Russia
+Fed. Rep. of Germany
+Italy
+United States

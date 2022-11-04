@@ -14,6 +14,7 @@
 import re
 import struct
 import ctypes
+import typing
 
 from datetime import datetime
 from datetime import timedelta
@@ -27,17 +28,16 @@ WS_CLIENTID = 'EBLINK'
 
 callsign_regex = r'(?P<callsign>\w+)(|/\w+)'
 receiver_regex = r'(?P<to>\w+|...)(|/\w+)'
-callsign_regex = r'(?P<complete_callsign>(?:(?P<prefix>[A-Z0-9]{1,4})/|)(?P<callsign>\d?[A-Z]{1,2}\d(?:[A-Z]{1,4}|\d{3}|\d{1,3}[A-Z])[A-Z]{0,5})(?:/(?P<suffix>[A-Z0-9]{1,4})|)(?:/(?P<suffix2>[A-Z0-9]{1,4})|)(?:(?P<suffix3>\-\d{1,3})|))'
-receiver_regex = r'(?P<complete_to>(?:(?P<prefix_to>[A-Z0-9]{1,4})/|)(?P<to>(?:\d?[A-Z]{1,2}\d(?:[A-Z]{1,4}|\d{3}|\d{1,3}[A-Z])[A-Z]{0,5})|...)(?:/(?P<suffix_to>[A-Z0-9]{1,4})|)(?:/(?P<suffix2_to>[A-Z0-9]{1,4})|)(?:(?P<suffix3_to>\-\d{1,3})|))'
+callsign_regex = r'(?P<complete_callsign>(?P<callsign>(?:(?P<prefix>[A-Z0-9]{1,4})/)?(?:\d?[A-Z]{1,2}\d(?:[A-Z]{1,4}|\d{3}|\d{1,3}[A-Z])[A-Z]{0,5}))(?:/(?P<suffix>[A-Z0-9]{1,4}))?(?:/(?P<suffix2>[A-Z0-9]{1,4}))?(?:(?P<suffix3>\-\d{1,3}))?)'
+receiver_regex = r'(?P<complete_to>(?P<to>(?:(?P<prefix_to>[A-Z0-9]{1,4})/)?(?:(?:\d?[A-Z]{1,2}\d(?:[A-Z]{1,4}|\d{3}|\d{1,3}[A-Z])[A-Z]{0,5})|...))(?:/(?P<suffix_to>[A-Z0-9]{1,4}))?(?:/(?P<suffix2_to>[A-Z0-9]{1,4}))?(?:(?P<suffix3_to>\-\d{1,3}))?)'
 
-call_types = [
-  ("CQ", re.compile(r'^<?(?P<to>CQ)>? (<?(?P<extra>.*)>? |)<?'+callsign_regex+r'>? <?(?P<grid>[A-Z]{2}[0-9]{2})>?')),
-  ("CQ", re.compile(r'^<?(?P<to>CQ)>? (<?(?P<extra>.*)>? |)<?'+callsign_regex+r'>?')),
-  ("R73", re.compile(r'^<?'+receiver_regex+r'>? <?'+callsign_regex+r'>? (?P<R73>RRR|R*73)')),
-  ("REPLY", re.compile(r'^<?'+receiver_regex+r'>? <?'+callsign_regex+r'>? <?(?P<grid>[A-Z]{2}[0-9]{2})>?')),
-  ("SNR", re.compile(r'^<?'+receiver_regex+r'>? <?'+callsign_regex+r'>? (?P<snr>0|[-+]\d+)')),
-  ("RSNR", re.compile(r'^<?'+receiver_regex+r'>? <?'+callsign_regex+r'>? R(?P<snr>0|[-+]\d+)'))
-]
+call_types: typing.Dict[str, re.Pattern] = {
+  "CQ": re.compile(r'^<?CQ>? (?:<?(?P<extra>.*)>? )?<?'+callsign_regex+r'>?(?: <?(?P<grid>[A-Z]{2}[0-9]{2})>?)?'),
+  "R73": re.compile(r'^<?'+receiver_regex+r'>? <?'+callsign_regex+r'>? (?P<R73>RRR|R*73)'),
+  "GRID": re.compile(r'^<?'+receiver_regex+r'>? <?'+callsign_regex+r'>? <?(?P<grid>[A-Z]{2}[0-9]{2})>?'),
+  "SNR": re.compile(r'^<?'+receiver_regex+r'>? <?'+callsign_regex+r'>? (?P<snr>0|[-+]\d+)'),
+  "RSNR": re.compile(r'^<?'+receiver_regex+r'>? <?'+callsign_regex+r'>? R(?P<snr>0|[-+]\d+)')
+}
 
 # Check the file
 
@@ -353,107 +353,107 @@ class WSStatus(_WSPacket):
     self._data['TxHaltClicked'] = self._get_bool()
 
   @property
-  def Frequency(self):
+  def Frequency(self) -> int:
     return self._data['Frequency']
 
   @property
-  def Mode(self):
+  def Mode(self) -> str:
     return self._data['Mode']
 
   @property
-  def DXCall(self):
+  def DXCall(self) -> typing.Optional[str]:
     return self._data['DXCall']
 
   @property
-  def Report(self):
+  def Report(self) -> str:
     return self._data['Report']
 
   @property
-  def TXMode(self):
+  def TXMode(self) -> str:
     return self._data['TXMode']
 
   @property
-  def TXEnabled(self):
+  def TXEnabled(self) -> bool:
     return self._data['TXEnabled']
 
   @property
-  def Transmitting(self):
+  def Transmitting(self) -> bool:
     return self._data['Transmitting']
 
   @property
-  def Decoding(self):
+  def Decoding(self) -> bool:
     return self._data['Decoding']
 
   @property
-  def RXdf(self):
+  def RXdf(self) -> int:
     return self._data['RXdf']
 
   @property
-  def TXdf(self):
+  def TXdf(self) -> int:
     return self._data['TXdf']
 
   @property
-  def DeCall(self):
+  def DeCall(self) -> typing.Optional[str]:
     return self._data['DeCall']
 
   @property
-  def DeGrid(self):
+  def DeGrid(self) -> typing.Optional[str]:
     return self._data['DeGrid']
 
   @property
-  def DXGrid(self):
+  def DXGrid(self) -> typing.Optional[str]:
     return self._data['DXGrid']
 
   @property
-  def TXWatchdog(self):
+  def TXWatchdog(self) -> bool:
     return self._data['TXWatchdog']
 
   @property
-  def SubMode(self):
+  def SubMode(self) -> typing.Optional[str]:
     return self._data['SubMode']
 
   @property
-  def Fastmode(self):
+  def Fastmode(self) -> bool:
     return self._data['Fastmode']
 
   @property
-  def SpecialOPMode(self):
+  def SpecialOPMode(self) -> bytes:
     return self._data['SpecialOPMode']
 
   @property
-  def FrequencyTolerance(self):
+  def FrequencyTolerance(self) -> int:
     return self._data['FrequencyTolerance']
 
   @property
-  def TRPeriod(self):
+  def TRPeriod(self) -> int:
     return self._data['TRPeriod']
 
   @property
-  def ConfigName(self):
+  def ConfigName(self) -> str:
     return self._data['ConfigName']
 
   @property
-  def LastTxMsg(self):
+  def LastTxMsg(self) -> typing.Optional[str]:
     return self._data['LastTxMsg']
 
   @property
-  def QSOProgress(self):
+  def QSOProgress(self) -> int:
     return self._data['QSOProgress']
 
   @property
-  def TxEven(self):
+  def TxEven(self) -> bool:
     return self._data['TxEven']
 
   @property
-  def CQOnly(self):
+  def CQOnly(self) -> bool:
     return self._data['CQOnly']
 
   @property
-  def GenMsg(self):
+  def GenMsg(self) -> typing.Optional[str]:
     return self._data['GenMsg']
 
   @property
-  def TxHaltClicked(self):
+  def TxHaltClicked(self) -> bool:
     return self._data['TxHaltClicked']
 
 
@@ -504,39 +504,39 @@ class WSDecode(_WSPacket):
     return self._data
 
   @property
-  def New(self):
+  def New(self) -> bool:
     return self._data['New']
 
   @property
-  def Time(self):
+  def Time(self) -> int:
     return self._data['Time']
 
   @property
-  def SNR(self):
+  def SNR(self) -> int:
     return self._data['SNR']
 
   @property
-  def DeltaTime(self):
+  def DeltaTime(self) -> float:
     return self._data['DeltaTime']
 
   @property
-  def DeltaFrequency(self):
+  def DeltaFrequency(self) -> int:
     return self._data['DeltaFrequency']
 
   @property
-  def Mode(self):
+  def Mode(self) -> str:
     return self._data['Mode']
 
   @property
-  def Message(self):
+  def Message(self) -> str:
     return self._data['Message']
 
   @property
-  def LowConfidence(self):
+  def LowConfidence(self) -> bool:
     return self._data['LowConfidence']
 
   @property
-  def OffAir(self):
+  def OffAir(self) -> bool:
     return self._data['OffAir']
 
 

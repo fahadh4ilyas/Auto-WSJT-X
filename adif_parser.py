@@ -1,4 +1,4 @@
-import json, adif_io, requests, re
+import json, adif_io, requests, re, typing
 from pyhamtools import LookupLib, Callinfo
 from pyhamtools.frequency import freq_to_band
 from tqdm import tqdm
@@ -21,7 +21,7 @@ mongo_client = MongoClient(MONGO_HOST, MONGO_PORT)
 db = mongo_client.wsjt
 done_coll = db.black
 
-def string_band_to_number(band: str):
+def string_band_to_number(band: str) -> typing.Union[float, int]:
     if 'mm' in band:
         band = band[:-2]
         band.replace(',','.')
@@ -36,7 +36,7 @@ def string_band_to_number(band: str):
     
     return band
 
-def is_confirmed(data):
+def is_confirmed(data: dict) -> bool:
 
     if data.get('APP_QRZLOG_STATUS', 'C') == 'C':
         return True
@@ -47,11 +47,23 @@ def is_confirmed(data):
 
 def main(data_str: str):
 
-    data, _ = adif_io.read_from_string(data_str)
+    t = adif_io.read_from_string(data_str)
+
+    data, _ = typing.cast(
+        typing.List[
+            typing.List[typing.Dict[str, typing.Any]],
+            typing.Dict[str, typing.Any]
+        ],
+        t
+    )
 
     for d in tqdm(data):
+        if d.get('MODE', None) not in ['FT8', 'FT4']:
+            continue
+
         inserted_data = {
             'callsign': d['CALL'],
+            'mode': d.get('MODE', 'FT8'),
             'confirmed': is_confirmed(d)
         }
 

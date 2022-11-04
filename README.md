@@ -1,6 +1,6 @@
-# AUTO WSJT-X FT8 COMMUNICATION
+# AUTO WSJT-X FT8 & FT4 COMMUNICATION
 
-This is a script to automate ft8 using WSJT-X that already modified that can be downloaded [here](https://bit.ly/WSJTX-Fahadh).
+This is a script to automate ft8 and ft4 using WSJT-X that already modified that can be downloaded [here](https://bit.ly/WSJTX-Fahadh).
 
 ### Requirements
 * [adif-io](https://pypi.org/project/adif-io/)
