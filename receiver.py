@@ -2,7 +2,7 @@ import re, socket, select, wsjtx, struct, requests, typing
 
 from datetime import datetime, timedelta
 
-from pyhamtools.locator import calculate_distance, calculate_heading, latlong_to_locator
+from pyhamtools.locator import latlong_to_locator
 from pyhamtools.frequency import freq_to_band
 
 from states import States
@@ -32,6 +32,12 @@ with open(DXCC_WANTED) as f:
             ) for i,d in enumerate(priority_country_list, start=1)
         ]
     )
+
+LOCAL_STATES = {
+    'my_callsign': '',
+    'states_completed': False,
+    'current_callsign': ''
+}
 
 if MULTICAST:
     sock_wsjt = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
@@ -112,8 +118,12 @@ def parsing_message(message: str) -> dict:
 
     return {}
 
-def get_location_data(callsign: str) -> dict:
+def get_location_data(callsign: str, latest_data: dict = {}) -> dict:
 
+    if latest_data and all([i in latest_data for i in ['country', 'dxcc', 'continent']]):
+        return {
+            k: latest_data[k] for k in ['country', 'dxcc', 'continent']
+        }
     try:
         location_data = call_info.get_all(callsign)
         location_data['dxcc'] = country_to_dxcc.get(location_data['country'], 0)
@@ -124,51 +134,41 @@ def get_location_data(callsign: str) -> dict:
 
 def get_grid_data(
     callsign: str,
-    my_grid: str,
     grid: typing.Optional[str] = None,
-    location_data: typing.Optional[dict] = {}
+    location_data: dict = {},
+    latest_data: dict = {}
     ) -> dict:
 
-    data = {}
+    data = {'grid': None}
     if grid:
         data['grid'] = grid
-        data['distance'] = calculate_distance(my_grid, data['grid'])
-        data['azimuth'] = calculate_heading(my_grid, data['grid'])
+    elif latest_data and 'grid' in latest_data:
+        data['grid'] = latest_data['grid']
     else:
         current_grid = (grid_coll.find_one({'callsign': callsign}) or {}).get('grid', None)
         if not current_grid and 'latitude' in location_data:
             current_grid = latlong_to_locator(location_data['latitude'], location_data['longitude'])[:4]
         if current_grid:
             data['grid'] = current_grid
-            data['distance'] = calculate_distance(my_grid, data['grid'])
-            data['azimuth'] = calculate_heading(my_grid, data['grid'])
     
     return data
 
-def completing_data(packet: wsjtx.WSDecode, my_grid: str, now: float = None) -> dict:
+def completing_data(data: dict, additional_data: dict, now: float = None, latest_data: dict = {}) -> dict:
 
-    data = packet.as_dict()
-    data.update(parsing_message(packet.Message))
-
-    if 'type' not in data:
-        return {}
-
-    location_data = get_location_data(data['callsign'])
+    location_data = get_location_data(data['callsign'], latest_data)
     if location_data:
         data.update({
-            'country': location_data['country'],
-            'dxcc': location_data['dxcc'],
-            'continent': location_data['continent']
+            k: location_data[k] for k in ['country', 'dxcc', 'continent']
         })
     
-    grid_data = get_grid_data(data['callsign'], my_grid, data.get('grid', None), location_data)
+    grid_data = get_grid_data(data['callsign'], data.get('grid', None), location_data)
     if grid_data:
         data.update(grid_data)
     if data['grid'] is None:
         data.pop('grid')
 
-    data['band'] = states.band
-    data['mode'] = states.mode
+    data.update(additional_data)
+
     data['expired'] = False
     data['tried'] = False
     data['isSpam'] = False
@@ -193,7 +193,7 @@ def get_states_data(callsign: str) -> dict:
 
 
 def process_wsjt(_data: bytes, ip_from: tuple, states: States):
-    global callsign_exc
+    global callsign_exc, LOCAL_STATES
 
     try:
         packet = wsjtx.ft8_decode(_data)
@@ -219,6 +219,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
         now = datetime.now().timestamp()
         logging.debug(packet)
         states.my_callsign = packet.DeCall or ''
+        LOCAL_STATES['my_callsign'] = packet.DeCall or ''
         states.my_grid = packet.DeGrid or ''
         states.dx_grid = packet.DXGrid or ''
         states.tx_enabled = packet.TXEnabled
@@ -228,21 +229,25 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
         states.tx_even = packet.TxEven
         packet_last_tx = packet.LastTxMsg or ''
 
+        latest_band = states.band
+        latest_dx = states.dx_callsign
+        latest_mode = states.mode
         current_band: int = freq_to_band(packet.Frequency//1000)['band']
         current_dx = packet.DXGrid or ''
         current_mode = packet.Mode
         isTransmitting = packet.Transmitting and states.transmitting != packet.Transmitting
-        isChangingBand = states.band != 0 and states.band != current_band
-        isChangingMode = states.mode != '' and states.mode != current_mode
-        isChangingDX = states.dx_callsign != '' and states.dx_callsign != current_dx
+        isChangingBand = latest_band != 0 and latest_band != current_band
+        isChangingMode = latest_mode != '' and latest_mode != current_mode
+        isChangingDX = latest_dx != '' and latest_dx != current_dx
 
         states.transmitting = packet.Transmitting
-        states.dx_callsign = current_dx
 
         matched = parsing_message(packet_last_tx)
 
         if isChangingDX:
+            states.dx_callsign = current_dx
             states.current_callsign = current_dx
+            LOCAL_STATES['current_callsign'] = current_dx
 
         if isTransmitting:
             logging.info(
@@ -357,18 +362,16 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     'band': current_band,
                     'mode': current_mode
                 })
-                location_data = get_location_data(current_data['callsign'])
+                location_data = get_location_data(current_data['callsign'], current_data)
                 if 'country' not in current_data:
                     current_data.update({
-                        'country': location_data['country'],
-                        'dxcc': location_data['dxcc'],
-                        'continent': location_data['continent']
+                        k: location_data[k] for k in ['country', 'dxcc', 'continent']
                     })
                 grid_data = get_grid_data(
                     current_data['callsign'],
-                    states.my_grid,
                     current_data.get('grid', None),
-                    location_data
+                    location_data,
+                    current_data
                 )
                 current_data.update(grid_data)
                 if current_data.get('grid', None) is None:
@@ -395,52 +398,70 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
         if isChangingBand:
             logging.warning('Changing band by user!')
-            logging.warning(f'[DB] [MODE: {states.mode}] [BAND: {states.band}] Removing all message!')
-            call_coll.delete_many({'band': states.band, 'mode': states.mode})
+            logging.warning(f'[DB] [MODE: {latest_mode}] [BAND: {latest_band}] Removing all message!')
+            call_coll.delete_many({'band': latest_band, 'mode': latest_mode})
         
         if isChangingMode:
             logging.warning('Changing mode by user!')
-            logging.warning(f'[DB] [MODE: {states.mode}] Removing all message!')
-            call_coll.delete_many({'mode': states.mode})
+            logging.warning(f'[DB] [MODE: {latest_mode}] Removing all message!')
+            call_coll.delete_many({'mode': latest_mode})
 
         states.band = current_band
         states.mode = current_mode
 
+        LOCAL_STATES['states_completed'] = True
+
     elif isinstance(packet, wsjtx.WSDecode):
+
+        if not LOCAL_STATES['states_completed']:
+            return
+
         now = datetime.now().timestamp()
+
+        band = states.band
+        mode = states.mode
 
         if MIN_FREQUENCY <= packet.DeltaFrequency <= MAX_FREQUENCY:
             delta_time = packet.Time/1000
-            if 0 <= delta_time%TIMING[states.mode]['full'] < TIMING[states.mode]['half']:
+            if 0 <= delta_time%TIMING[mode]['full'] < TIMING[mode]['half']:
                 states.add_even_frequency(packet.DeltaFrequency)
             else:
                 states.add_odd_frequency(packet.DeltaFrequency)
         
         logging.info(
-            f'[RX] [MODE: {states.mode}] [BAND: {states.band}] '
+            f'[RX] [MODE: {mode}] [BAND: {band}] '
             f'[FREQUENCY: {packet.DeltaFrequency}] [DB: {packet.SNR}] {packet.Message}'
         )
-        data = completing_data(packet, states.my_grid, now)
-        if not data:
+
+        data = packet.as_dict()
+        data.update(parsing_message(packet.Message))
+
+        if 'type' not in data:
             logging.warning('Cannot parsing the message!')
             return
-
-        if states.num_inactive_before_cut and data['callsign'] == states.current_callsign:
-            states.inactive_count = 0
-
-        latest_data = call_coll.find_one_and_delete(
-            {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']}
-        ) or {}
-        latest_data.pop('_id', None)
-        if latest_data:
-            logging.warning(
-                f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
-                f'[CALLSIGN: {latest_data["callsign"]}] Removing {latest_data["Message"]}'
-            )
 
         if data['callsign'] in callsign_exc:
             logging.warning('The Callsign is blacklisted in callsign exception!')
             return
+
+        latest_data = call_coll.find_one_and_delete(
+            {'callsign': data['callsign'], 'band': band, 'mode': mode}
+        ) or {}
+        latest_data.pop('_id', None)
+        if latest_data:
+            logging.warning(
+                f'[DB] [MODE: {mode}] [BAND: {band}] '
+                f'[CALLSIGN: {latest_data["callsign"]}] Removing {latest_data["Message"]}'
+            )
+
+        additional_data = {
+            'band': band,
+            'mode': mode
+        }
+        completing_data(data, additional_data, now, latest_data)
+
+        if states.num_inactive_before_cut and data['callsign'] == LOCAL_STATES['current_callsign']:
+            states.inactive_count = 0
 
         if data['type'] == 'CQ':
 
@@ -450,7 +471,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     'grid': data['grid']
                 }}, upsert=True)
 
-            if latest_data.get('to', None) == states.my_callsign:
+            if latest_data and latest_data.get('to', None) == LOCAL_STATES['my_callsign']:
                 if latest_data.get('type', None) != 'R73' or latest_data.get('R73', None) in ['RRR', 'RR73']:
                     logging.warning('Already CQ-ing even though still talking with me!')
                     logging.info(
@@ -485,7 +506,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
         elif data['type'] == 'R73':
 
-            if data['to'] == states.my_callsign:
+            if data['to'] == LOCAL_STATES['my_callsign']:
 
                 if data['R73'] == '73':
                     return
@@ -506,7 +527,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
             else:
 
-                if latest_data.get('to', None) == states.my_callsign:
+                if latest_data and latest_data.get('to', None) == LOCAL_STATES['my_callsign']:
                     if latest_data.get('type', None) != 'R73' or latest_data.get('R73', None) in ['RRR', 'RR73']:
                         logging.warning('Sending 73 to other callsign even though still talking with me!')
                         logging.info(
@@ -548,7 +569,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 }}, upsert=True
             )
 
-            if data['to'] == states.my_callsign:
+            if data['to'] == LOCAL_STATES['my_callsign']:
 
                 logging.info(
                     f'[DB] [MODE: {data["mode"]}] [BAND: {data["band"]}] '
@@ -564,7 +585,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
             else:
 
-                if latest_data.get('to', None) == states.my_callsign:
+                if latest_data and latest_data.get('to', None) == LOCAL_STATES['my_callsign']:
 
                     if latest_data.get('type', None) != 'R73' or latest_data.get('R73', None) in ['RRR', 'RR73']:
                         logging.warning('Re-emerge latest message from this callsign!')
@@ -606,7 +627,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
         elif data['type'] == 'SNR':
 
-            if data['to'] == states.my_callsign:
+            if data['to'] == LOCAL_STATES['my_callsign']:
                 
                 logging.info(
                     f'[DB] [MODE: {data["mode"]}] [BAND: {data["band"]}] '
@@ -622,7 +643,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
             else:
                 
-                if latest_data.get('to', None) == states.my_callsign:
+                if latest_data and latest_data.get('to', None) == LOCAL_STATES['my_callsign']:
 
                     if latest_data.get('type', None) != 'R73' or latest_data.get('R73', None) in ['RRR', 'RR73']:
                         logging.warning('Re-emerge latest message from this callsign!')
@@ -664,7 +685,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
         elif data['type'] == 'RSNR':
 
-            if data['to'] == states.my_callsign:
+            if data['to'] == LOCAL_STATES['my_callsign']:
                 
                 logging.info(
                     f'[DB] [MODE: {data["mode"]}] [BAND: {data["band"]}] '
@@ -680,7 +701,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
             else:
                 
-                if latest_data.get('to', None) == states.my_callsign:
+                if latest_data.get('to', None) == LOCAL_STATES['my_callsign']:
 
                     if latest_data.get('type', None) != 'R73' or latest_data.get('R73', None) in ['RRR', 'RR73']:
                         logging.warning('Re-emerge latest message from this callsign!')
@@ -728,6 +749,9 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
         states.closed = True
         raise KeyboardInterrupt('WSJT-X Closed!')
 
+    else:
+        logging.debug(packet)
+
 def init(sock: socket.socket):
 
     logging.info('Initializing...')
@@ -772,7 +796,7 @@ def main(sock: socket.socket, states: States):
     ip_from = None
     socks = [sock]
 
-    init(sock[0])
+    init(sock)
 
     while True:
         try:
