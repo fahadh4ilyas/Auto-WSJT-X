@@ -59,6 +59,7 @@ class PacketType(Enum):
   SWITCHCONFIGURATION = 14      # In
   CONFIGURE = 15                # In
   ENABLETX = 16
+  ENQUEUEDECODE = 17
 
 
 class Modifiers(Enum):
@@ -1037,6 +1038,88 @@ class WSEnableTx(_WSPacket):
   def Frequency(self, val):
     self._data['Frequency'] = int(val)
 
+class WSEnqueueDecode(_WSPacket):
+  """Packet Type 17 Enqueue  Decode  (Out)"""
+
+  def __init__(self, pkt=None):
+    super().__init__(pkt)
+    self._packet_type = PacketType.ENQUEUEDECODE
+
+  def _decode(self):
+    super()._decode()
+    self._data['AutoGen'] = self._get_bool()
+    self._data['Time'] = self._get_uint32()
+    self._data['SNR'] = self._get_int32()
+    self._data['DeltaTime'] = round(self._get_double(), 3)
+    self._data['DeltaFrequency'] = self._get_uint32()
+    self._data['Mode'] = self._get_string()
+    self._data['Message'] = self._get_string()
+    self._data['IsDX'] = self._get_bool()
+    self._data['Modifier'] = self._get_bool()
+
+  def __repr__(self):
+    keys = [
+      'AutoGen',
+      'Time',
+      'SNR',
+      'DeltaTime',
+      'DeltaFrequency',
+      'Mode',
+      'Message',
+      'IsDX',
+      'Modifier'
+    ]
+    return ("{} - "+" ".join([i+': '+'{}' for i in keys])).format(
+      self.__class__,
+      self.AutoGen,
+      self.Time,
+      self.SNR,
+      self.DeltaTime,
+      self.DeltaFrequency,
+      self.Mode,
+      self.Message,
+      self.IsDX,
+      self.Modifier)
+
+  def as_dict(self):
+    return self._data
+
+  @property
+  def AutoGen(self) -> bool:
+    return self._data['AutoGen']
+
+  @property
+  def Time(self) -> int:
+    return self._data['Time']
+
+  @property
+  def SNR(self) -> int:
+    return self._data['SNR']
+
+  @property
+  def DeltaTime(self) -> float:
+    return self._data['DeltaTime']
+
+  @property
+  def DeltaFrequency(self) -> int:
+    return self._data['DeltaFrequency']
+
+  @property
+  def Mode(self) -> str:
+    return self._data['Mode']
+
+  @property
+  def Message(self) -> str:
+    return self._data['Message']
+
+  @property
+  def IsDX(self) -> bool:
+    return self._data['IsDX']
+
+  @property
+  def Modifier(self) -> bool:
+    return self._data['Modifier']
+
 def wstime2datetime(qtm):
   """wsjtx time containd the number of milliseconds since midnight"""
   tday_midnight = datetime.combine(datetime.utcnow(), datetime.min.time())
@@ -1062,7 +1145,8 @@ def ft8_decode(pkt):
     PacketType.QSOLOGGED.value: WSLogged,
     PacketType.CLOSE.value: WSClose,
     PacketType.LOGGEDADIF.value: WSADIF,
-    PacketType.HIGHLIGHTCALLSIGN.value: WSHighlightCallsign
+    PacketType.HIGHLIGHTCALLSIGN.value: WSHighlightCallsign,
+    PacketType.ENQUEUEDECODE.value: WSEnqueueDecode
   }
 
   try:
