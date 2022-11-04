@@ -49,7 +49,7 @@ def replying(CURRENT_DATA, renew_frequency: bool = True) -> bool:
     logging.info('Replying to: '+CURRENT_DATA['callsign'])
     return True
 
-def transmitting():
+def transmitting(now: float):
 
     if states.transmit_phase:
         states.enable_monitoring()
@@ -70,6 +70,11 @@ def transmitting():
         states.disable_transmit()
         states.enable_monitoring()
         return
+    
+    message_time = (0 <= CURRENT_DATA['Time']/1000%TIMING[states.mode]['full'] < TIMING[states.mode]['half'])
+    current_time = (0 <= now%TIMING[states.mode]['full'] < TIMING[states.mode]['half'])
+    if message_time != current_time:
+        return
         
     replying(CURRENT_DATA, states.tries%states.max_tries_change_freq == 0)
 
@@ -78,8 +83,8 @@ def init():
     states.transmitter_started = True
     states.sort_by = SORTBY
     states.max_tries_change_freq = MAX_TRIES_CHANGE_FREQUENCY
-    states.change_frequency((MAX_FREQUENCY+MIN_FREQUENCY)//2)
     states.enable_monitoring()
+    states.change_frequency((MAX_FREQUENCY+MIN_FREQUENCY)//2)
 
 def main():
     global CURRENT_DATA
@@ -100,7 +105,7 @@ def main():
                 continue
             if not states.receiver_started:
                 raise ValueError('Receiver Stopped!')
-            transmitting()
+            transmitting(now)
             time.sleep(0.5)
         except KeyboardInterrupt:
             states.transmitter_started = False
