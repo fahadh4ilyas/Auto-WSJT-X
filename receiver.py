@@ -21,8 +21,6 @@ if CALLSIGN_EXCEPTION:
     except:
         pass
 
-TRANSMIT_COUNTER = 0
-
 with open(DXCC_WANTED) as f:
     priority_country_list = f.read().splitlines()
     length_priority_country_list = len(priority_country_list)
@@ -195,7 +193,7 @@ def get_states_data(callsign: str) -> dict:
 
 
 def process_wsjt(_data: bytes, ip_from: tuple, states: States):
-    global callsign_exc, TRANSMIT_COUNTER
+    global callsign_exc
 
     try:
         packet = wsjtx.ft8_decode(_data)
@@ -270,11 +268,11 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 if isDifferent:
                     states.tries = 1
                     states.inactive_count = 1
-                    TRANSMIT_COUNTER = 1
+                    states.transmit_counter = 1
                 else:
                     states.tries = states.tries + 1
                     states.inactive_count = states.inactive_count + 1
-                    TRANSMIT_COUNTER += 1
+                    states.transmit_counter = states.transmit_counter + 1
 
                 result = {}
                 if matched.get('type', 'CQ') != 'CQ':
@@ -285,7 +283,6 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 if states.num_inactive_before_cut and states.inactive_count > states.num_inactive_before_cut:
                     states.tries = 0
                     states.inactive_count = 0
-                    TRANSMIT_COUNTER = 0
                     states.current_callsign = ''
                     if result:
                         logging.warning(
@@ -300,7 +297,6 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 if states.tries >= result.get('tries', states.max_tries):
                     states.tries = 0
                     states.inactive_count = 0
-                    TRANSMIT_COUNTER = 0
                     states.current_callsign = ''
                     if result:
                         logging.warning(
@@ -312,10 +308,10 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                         {'$set': {'tried': True}}
                     )
                 
-                if TRANSMIT_COUNTER >= 2*states.max_tries:
+                if states.transmit_counter >= 2*states.max_tries:
                     states.tries = 0
                     states.inactive_count = 0
-                    TRANSMIT_COUNTER = 0
+                    states.transmit_counter = 0
                     states.current_callsign = ''
                     if result:
                         logging.warning(
@@ -330,7 +326,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             else:
                 states.tries = 0
                 states.inactive_count = 0
-                TRANSMIT_COUNTER = 0
+                states.transmit_counter = 0
 
             if isDifferent and matched.get('type', None) == 'R73':
                 qso_data = done_coll.find_one(

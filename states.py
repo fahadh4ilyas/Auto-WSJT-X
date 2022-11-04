@@ -16,7 +16,9 @@ class States(object):
             self.sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 1)
         else:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        
+
+    # WSJT-X PARAMS
+    # ==========================================================
     @property
     def ip(self) -> str:
         return (self.r.get('ip') or b'').decode()
@@ -32,38 +34,6 @@ class States(object):
     @port.setter
     def port(self, val: int):
         self.r.set('port', val)
-    
-    @property
-    def current_callsign(self) -> str:
-        return (self.r.get('current_callsign') or b'').decode()
-    
-    @current_callsign.setter
-    def current_callsign(self, val: str):
-        self.r.set('current_callsign', val)
-
-    @property
-    def inactive_count(self) -> int:
-        return int(self.r.get('inactive_count') or 0)
-    
-    @inactive_count.setter
-    def inactive_count(self, val: int):
-        self.r.set('inactive_count', val)
-
-    @property
-    def num_inactive_before_cut(self) -> int:
-        return int(self.r.get('num_inactive_before_cut') or 0)
-    
-    @num_inactive_before_cut.setter
-    def num_inactive_before_cut(self, val: int):
-        self.r.set('num_inactive_before_cut', val)
-
-    # @property
-    # def next_callsign(self) -> str:
-    #     return (self.r.get('next_callsign') or b'').decode()
-    
-    # @next_callsign.setter
-    # def next_callsign(self, val: str):
-    #     self.r.set('next_callsign', val)
 
     @property
     def my_callsign(self) -> str:
@@ -114,120 +84,6 @@ class States(object):
         self.r.set('mode', val)
 
     @property
-    def odd_frequencies(self) -> list:
-        return [int(i) for i in self.r.lrange('odd_frequencies', 0, -1)]
-    
-    @odd_frequencies.setter
-    def odd_frequencies(self, val: list):
-        self.r.delete('odd_frequencies')
-        self.r.rpush('odd_frequencies', *val)
-
-    def add_odd_frequency(self, val: int):
-        self.r.rpush('odd_frequencies', val)
-
-    @property
-    def even_frequencies(self) -> list:
-        return [int(i) for i in self.r.lrange('even_frequencies', 0, -1)]
-    
-    @even_frequencies.setter
-    def even_frequencies(self, val: list):
-        self.r.delete('even_frequencies')
-        self.r.rpush('even_frequencies', *val)
-
-    def add_even_frequency(self, val: int):
-        self.r.rpush('even_frequencies', val)
-    
-    @property
-    def sort_by(self) -> list:
-        return [json.loads(s) for s in self.r.lrange('sort_by', 0, -1)]
-    
-    @sort_by.setter
-    def sort_by(self, val: list):
-        self.r.delete('sort_by')
-        self.r.rpush('sort_by', json.dumps(['importance', -1]))
-        self.r.rpush('sort_by', *[json.dumps(l) for l in val])
-    
-    @property
-    def tries(self) -> int:
-        return int(self.r.get('tries') or 0)
-    
-    @tries.setter
-    def tries(self, val: int):
-        self.r.set('tries', val)
-
-    @property
-    def max_tries(self) -> int:
-        return int(self.r.get('max_tries') or 0)
-    
-    @max_tries.setter
-    def max_tries(self, val: int):
-        self.r.set('max_tries', val)
-
-    @property
-    def max_tries_change_freq(self) -> int:
-        return int(self.r.get('max_tries_change_freq') or 0)
-    
-    @max_tries_change_freq.setter
-    def max_tries_change_freq(self, val: int):
-        self.r.set('max_tries_change_freq', val)
-
-    @property
-    def min_db(self) -> int:
-        return int(self.r.get('min_db') or 0)
-    
-    @min_db.setter
-    def min_db(self, val: int):
-        self.r.set('min_db', val)
-
-    # @property
-    # def include_no_grid_cq(self) -> bool:
-    #     return not not self.r.get('include_no_grid_cq')
-    
-    # @include_no_grid_cq.setter
-    # def include_no_grid_cq(self, val: bool):
-    #     self.r.set('include_no_grid_cq', 1 if val else '')
-
-    # @property
-    # def include_callsign_with_affix(self) -> bool:
-    #     return not not self.r.get('include_callsign_with_affix')
-    
-    # @include_callsign_with_affix.setter
-    # def include_callsign_with_affix(self, val: bool):
-    #     self.r.set('include_callsign_with_affix', 1 if val else '')
-
-    @property
-    def new_grid(self) -> bool:
-        return not not self.r.get('new_grid')
-    
-    @new_grid.setter
-    def new_grid(self, val: bool):
-        self.r.set('new_grid', 1 if val else '')
-
-    @property
-    def new_dxcc(self) -> bool:
-        return not not self.r.get('new_dxcc')
-    
-    @new_dxcc.setter
-    def new_dxcc(self, val: bool):
-        self.r.set('new_dxcc', 1 if val else '')
-
-    # @property
-    # def rr73_as_cq(self) -> bool:
-    #     return not not self.r.get('rr73_as_cq')
-    
-    # @rr73_as_cq.setter
-    # def rr73_as_cq(self, val: bool):
-    #     self.r.set('rr73_as_cq', 1 if val else '')
-
-    # @property
-    # def max_force_reply_when_busy(self) -> int:
-    #     return int(self.r.get('max_force_reply_when_busy') or 0)
-    
-    # @max_force_reply_when_busy.setter
-    # def max_force_reply_when_busy(self, val: int):
-    #     self.r.set('max_force_reply_when_busy', val)
-    
-    @property
     def tx_enabled(self) -> bool:
         return not not self.r.get('tx_enabled')
     
@@ -260,30 +116,6 @@ class States(object):
         self.r.set('closed', 1 if val else '')
 
     @property
-    def transmitter_started(self) -> bool:
-        return not not self.r.get('transmitter_started')
-    
-    @transmitter_started.setter
-    def transmitter_started(self, val: bool):
-        self.r.set('transmitter_started', 1 if val else '')
-    
-    @property
-    def receiver_started(self) -> bool:
-        return not not self.r.get('receiver_started')
-    
-    @receiver_started.setter
-    def receiver_started(self, val: bool):
-        self.r.set('receiver_started', 1 if val else '')
-
-    @property
-    def transmit_phase(self) -> bool:
-        return not not self.r.get('transmit_phase')
-    
-    @transmit_phase.setter
-    def transmit_phase(self, val: bool):
-        self.r.set('transmit_phase', 1 if val else '')
-    
-    @property
     def rxdf(self) -> int:
         return int(self.r.get('rxdf') or 0)
     
@@ -314,6 +146,160 @@ class States(object):
     @tx_even.setter
     def tx_even(self, val: bool):
         self.r.set('tx_even', 1 if val else '')
+    # ==========================================================
+
+    # SCRIPT PARAMS
+    # Not configurable by user
+    # ==========================================================
+    @property
+    def transmitter_started(self) -> bool:
+        return not not self.r.get('transmitter_started')
+    
+    @transmitter_started.setter
+    def transmitter_started(self, val: bool):
+        self.r.set('transmitter_started', 1 if val else '')
+    
+    @property
+    def receiver_started(self) -> bool:
+        return not not self.r.get('receiver_started')
+    
+    @receiver_started.setter
+    def receiver_started(self, val: bool):
+        self.r.set('receiver_started', 1 if val else '')
+
+    @property
+    def transmit_phase(self) -> bool:
+        return not not self.r.get('transmit_phase')
+    
+    @transmit_phase.setter
+    def transmit_phase(self, val: bool):
+        self.r.set('transmit_phase', 1 if val else '')
+
+    @property
+    def odd_frequencies(self) -> list:
+        return [int(i) for i in self.r.lrange('odd_frequencies', 0, -1)]
+    
+    @odd_frequencies.setter
+    def odd_frequencies(self, val: list):
+        self.r.delete('odd_frequencies')
+        self.r.rpush('odd_frequencies', *val)
+
+    def add_odd_frequency(self, val: int):
+        self.r.rpush('odd_frequencies', val)
+
+    @property
+    def even_frequencies(self) -> list:
+        return [int(i) for i in self.r.lrange('even_frequencies', 0, -1)]
+    
+    @even_frequencies.setter
+    def even_frequencies(self, val: list):
+        self.r.delete('even_frequencies')
+        self.r.rpush('even_frequencies', *val)
+
+    def add_even_frequency(self, val: int):
+        self.r.rpush('even_frequencies', val)
+
+    @property
+    def current_callsign(self) -> str:
+        return (self.r.get('current_callsign') or b'').decode()
+    
+    @current_callsign.setter
+    def current_callsign(self, val: str):
+        self.r.set('current_callsign', val)
+
+    @property
+    def inactive_count(self) -> int:
+        return int(self.r.get('inactive_count') or 0)
+    
+    @inactive_count.setter
+    def inactive_count(self, val: int):
+        self.r.set('inactive_count', val)
+    
+    @property
+    def tries(self) -> int:
+        return int(self.r.get('tries') or 0)
+    
+    @tries.setter
+    def tries(self, val: int):
+        self.r.set('tries', val)
+
+    @property
+    def transmit_counter(self) -> int:
+        return int(self.r.get('transmit_counter') or 0)
+    
+    @transmit_counter.setter
+    def transmit_counter(self, val: int):
+        self.r.set('transmit_counter', val)
+    # ==========================================================
+
+    # CONFIGURABLE PARAMS
+    # ==========================================================
+    @property
+    def num_inactive_before_cut(self) -> int:
+        return int(self.r.get('num_inactive_before_cut') or 0)
+    
+    @num_inactive_before_cut.setter
+    def num_inactive_before_cut(self, val: int):
+        self.r.set('num_inactive_before_cut', val)
+
+    @property
+    def max_tries(self) -> int:
+        return int(self.r.get('max_tries') or 0)
+    
+    @max_tries.setter
+    def max_tries(self, val: int):
+        self.r.set('max_tries', val)
+
+    @property
+    def max_tries_change_freq(self) -> int:
+        return int(self.r.get('max_tries_change_freq') or 0)
+    
+    @max_tries_change_freq.setter
+    def max_tries_change_freq(self, val: int):
+        self.r.set('max_tries_change_freq', val)
+
+    @property
+    def sort_by(self) -> list:
+        return [json.loads(s) for s in self.r.lrange('sort_by', 0, -1)]
+    
+    @sort_by.setter
+    def sort_by(self, val: list):
+        self.r.delete('sort_by')
+        self.r.rpush('sort_by', json.dumps(['importance', -1]))
+        self.r.rpush('sort_by', *[json.dumps(l) for l in val])
+
+    @property
+    def min_db(self) -> int:
+        return int(self.r.get('min_db') or 0)
+    
+    @min_db.setter
+    def min_db(self, val: int):
+        self.r.set('min_db', val)
+
+    @property
+    def new_grid(self) -> bool:
+        return not not self.r.get('new_grid')
+    
+    @new_grid.setter
+    def new_grid(self, val: bool):
+        self.r.set('new_grid', 1 if val else '')
+
+    @property
+    def new_dxcc(self) -> bool:
+        return not not self.r.get('new_dxcc')
+    
+    @new_dxcc.setter
+    def new_dxcc(self, val: bool):
+        self.r.set('new_dxcc', 1 if val else '')
+
+    # @property
+    # def max_force_reply_when_busy(self) -> int:
+    #     return int(self.r.get('max_force_reply_when_busy') or 0)
+    
+    # @max_force_reply_when_busy.setter
+    # def max_force_reply_when_busy(self, val: int):
+    #     self.r.set('max_force_reply_when_busy', val)
+    # ==========================================================
     
     def halt_transmit(self, immediately: bool = True):
         packet = wsjtx.WSHaltTx()
