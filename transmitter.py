@@ -68,6 +68,7 @@ def transmitting(now: float):
     
     if not CURRENT_DATA:
         states.disable_transmit()
+        states.clear_message()
         states.enable_monitoring()
         return
     
@@ -111,6 +112,7 @@ def main():
             states.transmitter_started = False
             states.halt_transmit()
             states.disable_transmit()
+            states.clear_message()
             if input('Stop transmit? (y/n) ') == 'y':
                 break
             states.transmitter_started = True
@@ -118,6 +120,7 @@ def main():
             states.transmitter_started = False
             states.halt_transmit()
             states.disable_transmit()
+            states.clear_message()
             logging.exception('Something not right!')
             break
 
