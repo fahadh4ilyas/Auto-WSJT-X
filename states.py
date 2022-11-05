@@ -11,11 +11,44 @@ class States(object):
     def __init__(self, redis_host: str = '127.0.0.1', redis_port: int = 6379, multicast: bool = False):
         
         self.r = redis.Redis(host=redis_host, port=redis_port, db=0)
+
         if multicast:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
             self.sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 1)
         else:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        
+        self.states_types = {
+            'ip': str,
+            'port': int,
+            'my_callsign': str,
+            'my_grid': str,
+            'dx_callsign': str,
+            'dx_grid': str,
+            'band': int,
+            'mode': str,
+            'tx_enabled': bool,
+            'transmitting': bool,
+            'decoding': bool,
+            'closed': bool,
+            'rxdf': int,
+            'txdf': int,
+            'last_tx': str,
+            'tx_even': bool,
+            'transmitter_started': bool,
+            'receiver_started': bool,
+            'transmit_phase': bool,
+            'current_callsign': str,
+            'inactive_count': int,
+            'tries': int,
+            'transmit_counter': int,
+            'num_inactive_before_cut': int,
+            'max_tries': int,
+            'max_tries_change_freq': int,
+            'min_db': int,
+            'new_grid': bool,
+            'new_dxcc': bool
+        }
 
     # WSJT-X PARAMS
     # ==========================================================
@@ -300,6 +333,35 @@ class States(object):
     # def max_force_reply_when_busy(self, val: int):
     #     self.r.set('max_force_reply_when_busy', val)
     # ==========================================================
+
+    def change_states(self, **kwargs):
+
+        with self.r.pipeline() as p:
+            for k,val in kwargs.items():
+                if isinstance(val, bool):
+                    p = p.set(k, 1 if val else '')
+                else:
+                    p = p.set(k, val)
+                p.execute()
+    
+    def get_states(self, *args: str) -> dict:
+
+        with self.r.pipeline() as p:
+            for k in args:
+                p = p.get(k)
+            
+            result = dict(zip(args, p.execute()))
+        
+        for k,v in result.items():
+            k_types = self.states_types.get(k, None)
+            if k_types == bool:
+                result[k] = not not v
+            elif k_types == int:
+                result[k] = int(v or 0)
+            else:
+                result[k] = (v or b'').decode()
+        
+        return result
     
     def halt_transmit(self, immediately: bool = True):
         packet = wsjtx.WSHaltTx()
@@ -378,6 +440,12 @@ class States(object):
     def log_qso(self):
         packet = wsjtx.WSEnableTx()
         packet.NewTxMsgIdx = 5
+
+        self.sock.sendto(packet.raw(), (self.ip, self.port))
+    
+    def clear_message(self):
+        packet = wsjtx.WSEnableTx()
+        packet.NewTxMsgIdx = 16
 
         self.sock.sendto(packet.raw(), (self.ip, self.port))
     
