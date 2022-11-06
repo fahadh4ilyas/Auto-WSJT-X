@@ -53,6 +53,7 @@ states = States(REDIS_HOST, REDIS_PORT, multicast=MULTICAST)
 
 grid_coll = db.grid
 call_coll = db.calls
+message_coll = db.message
 
 def filter_cq(data: dict) -> bool:
 
@@ -497,7 +498,20 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             'band': band,
             'mode': mode
         }
-        completing_data(data, additional_data, now, latest_data)
+        completing_data(
+            data,
+            additional_data,
+            now,
+            latest_data or message_coll.find_one(
+                {'callsign': data['callsign'], 'band': band, 'mode': mode}
+            ) or {}
+        )
+
+        message_coll.update_one(
+            {'callsign': data['callsign'], 'band': band, 'mode': mode},
+            {'$set': data},
+            upsert=True
+        )
 
         if states.num_inactive_before_cut and data['callsign'] == LOCAL_STATES['current_callsign']:
             states.inactive_count = 0
@@ -846,10 +860,12 @@ def main(sock: socket.socket, states: States):
                 process_wsjt(_data, ip_from, states)
         except KeyboardInterrupt:
             call_coll.delete_many({})
+            message_coll.delete_many({})
             states.receiver_started = False
             break
         except:
             call_coll.delete_many({})
+            message_coll.delete_many({})
             states.receiver_started = False
             logging.exception('Something not right!')
             break
