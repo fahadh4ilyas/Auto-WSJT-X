@@ -267,8 +267,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
             isDifferent = latest_tx != packet_last_tx
             states.last_tx = packet_last_tx
-            isDifferentMessage = matched['type'] != matched_latest.get('type', None) and \
-                matched['to'] != matched_latest.get('to', None)
+            isSameMessage = matched['type'] == matched_latest.get('type', None) and \
+                matched['to'] == matched_latest.get('to', None)
 
             if EXPIRED_TIME:
                 call_coll.update_many(
@@ -282,7 +282,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             states.odd_frequencies = [MIN_FREQUENCY, MAX_FREQUENCY]
 
             if states.transmitter_started:
-                if isDifferentMessage:
+                if not isSameMessage:
                     states.change_states(
                         tries = 1,
                         inactive_count = 1,
