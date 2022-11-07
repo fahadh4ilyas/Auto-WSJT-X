@@ -67,6 +67,7 @@ def transmitting(now: float):
         sort=states.sort_by) or {}
     
     if not CURRENT_DATA:
+        states.enable_transmit_counter = 0
         states.disable_transmit()
         states.clear_message()
         states.enable_monitoring()

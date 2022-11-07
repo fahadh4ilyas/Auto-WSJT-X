@@ -1,4 +1,4 @@
-import re, socket, select, wsjtx, struct, requests, typing
+import re, socket, select, wsjtx, struct, requests, typing, time
 
 from datetime import datetime, timedelta
 
@@ -38,8 +38,6 @@ LOCAL_STATES = {
     'states_completed': False,
     'current_callsign': ''
 }
-
-ENABLE_TRANSMIT_COUNTER = 0
 
 if MULTICAST:
     sock_wsjt = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
@@ -190,7 +188,7 @@ def get_state_data(callsign: str) -> dict:
 
 
 def process_wsjt(_data: bytes, ip_from: tuple, states: States):
-    global callsign_exc, LOCAL_STATES, ENABLE_TRANSMIT_COUNTER
+    global callsign_exc, LOCAL_STATES
 
     try:
         packet = wsjtx.ft8_decode(_data)
@@ -232,8 +230,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             'band',
             'dx_callsign',
             'mode',
-            'transmitting',
-            'num_disable_transmit'
+            'transmitting'
         )
 
         latest_band = states_list['band']
@@ -444,11 +441,22 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                         f'[CALLSIGN: {matched["to"]}] Removing {result["Message"]}'
                     )
 
-        if isDoneTransmitting and states_list['num_disable_transmit'] and states.transmitter_started:
-            ENABLE_TRANSMIT_COUNTER = (ENABLE_TRANSMIT_COUNTER + 1) % states_list['num_disable_transmit']
-            if ENABLE_TRANSMIT_COUNTER == 0:
-                states.disable_transmit()
-                states.enable_monitoring()
+        if isDoneTransmitting:
+            states_list = states.get_states(
+                'num_disable_transmit',
+                'enable_transmit_counter',
+                'transmitter_started'
+            )
+            if states_list['num_disable_transmit']:
+                if states_list['transmitter_started']:
+                    value = (states_list['enable_transmit_counter'] + 1) % states_list['num_disable_transmit']
+                    if value == 0:
+                        time.sleep(0.2)
+                        states.disable_transmit()
+                        states.enable_monitoring()
+                else:
+                    value = 0
+                states.enable_transmit_counter = value
 
         if isChangingBand:
             logging.warning('Changing band by user!')
