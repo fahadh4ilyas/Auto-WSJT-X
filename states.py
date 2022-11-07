@@ -456,7 +456,7 @@ class States(object):
 
         self.sock.sendto(packet.raw(), (self.ip, self.port))
     
-    def reply(self, decoded_message: dict, TXdf: int = None):
+    def reply(self, decoded_message: dict, TXdf: int = None, skipGrid: bool = True):
         isEven = self.tx_even
         if 0 <= decoded_message['Time']/1000%30 < 15:
             if isEven:
@@ -479,6 +479,11 @@ class States(object):
 
         if isinstance(TXdf, int):
             self.change_frequency(TXdf)
+        
+        if skipGrid:
+            self.disable_gridtx()
+        else:
+            self.enable_gridtx()
     
     def log_qso(self):
         packet = wsjtx.WSEnableTx()

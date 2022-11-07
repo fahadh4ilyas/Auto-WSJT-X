@@ -44,7 +44,7 @@ def replying(CURRENT_DATA, renew_frequency: bool = True) -> bool:
     if renew_frequency:
         logging.info('Finding best frequency')
         best_frequency = calculate_best_frequency(frequencies)
-    states.reply(CURRENT_DATA, best_frequency)
+    states.reply(CURRENT_DATA, best_frequency, CURRENT_DATA.get('skipGrid', True))
     states.transmit_phase = True
     logging.info('Replying to: '+CURRENT_DATA['callsign'])
     return True
