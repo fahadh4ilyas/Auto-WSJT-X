@@ -267,7 +267,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
             isDifferent = latest_tx != packet_last_tx
             states.last_tx = packet_last_tx
-            isDifferentMessage = matched['type'] != matched_latest['type'] and matched['to'] != matched_latest['to']
+            isDifferentMessage = matched['type'] != matched_latest.get('type', None) and \
+                matched['to'] != matched_latest.get('to', None)
 
             if EXPIRED_TIME:
                 call_coll.update_many(
