@@ -262,9 +262,12 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             )
 
             matched = parsing_message(packet_last_tx)
+            latest_tx = states.last_tx
+            matched_latest = parsing_message(latest_tx)
 
-            isDifferent = states.last_tx != packet_last_tx
+            isDifferent = latest_tx != packet_last_tx
             states.last_tx = packet_last_tx
+            isDifferentMessage = matched['type'] != matched_latest['type'] and matched['to'] != matched_latest['to']
 
             if EXPIRED_TIME:
                 call_coll.update_many(
@@ -278,7 +281,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             states.odd_frequencies = [MIN_FREQUENCY, MAX_FREQUENCY]
 
             if states.transmitter_started:
-                if isDifferent:
+                if isDifferentMessage:
                     states.change_states(
                         tries = 1,
                         inactive_count = 1,
