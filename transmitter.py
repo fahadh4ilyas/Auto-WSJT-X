@@ -33,7 +33,7 @@ def calculate_best_frequency(freq: list) -> int:
     
     return curr_best
 
-def replying(CURRENT_DATA, renew_frequency: bool = True) -> bool:
+def replying(CURRENT_DATA: dict, renew_frequency: bool = True) -> bool:
 
     isOdd = (0 <= CURRENT_DATA['Time']/1000%TIMING[states.mode]['full'] < TIMING[states.mode]['half'])
     if isOdd:
