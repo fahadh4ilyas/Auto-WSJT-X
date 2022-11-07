@@ -42,6 +42,7 @@ class States(object):
             'inactive_count': int,
             'tries': int,
             'transmit_counter': int,
+            'enable_transmit_counter': int,
             'num_inactive_before_cut': int,
             'num_disable_transmit': int,
             'max_tries': int,
@@ -264,6 +265,14 @@ class States(object):
     @transmit_counter.setter
     def transmit_counter(self, val: int):
         self.r.set('transmit_counter', val)
+
+    @property
+    def enable_transmit_counter(self) -> int:
+        return int(self.r.get('enable_transmit_counter') or 0)
+    
+    @enable_transmit_counter.setter
+    def enable_transmit_counter(self, val: int):
+        self.r.set('enable_transmit_counter', val)
     # ==========================================================
 
     # CONFIGURABLE PARAMS
