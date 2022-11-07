@@ -460,18 +460,21 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
         now = datetime.now().timestamp()
 
-        band = states.band
-        mode = states.mode
+        states_list = states.get_states(
+            'band',
+            'mode',
+            'num_inactive_before_cut'
+        )
 
         if MIN_FREQUENCY <= packet.DeltaFrequency <= MAX_FREQUENCY:
             delta_time = packet.Time/1000
-            if 0 <= delta_time%TIMING[mode]['full'] < TIMING[mode]['half']:
+            if 0 <= delta_time%TIMING[states_list['mode']]['full'] < TIMING[states_list['mode']]['half']:
                 states.add_even_frequency(packet.DeltaFrequency)
             else:
                 states.add_odd_frequency(packet.DeltaFrequency)
         
         logging.info(
-            f'[RX] [MODE: {mode}] [BAND: {band}] '
+            f'[RX] [MODE: {states_list["mode"]}] [BAND: {states_list["band"]}] '
             f'[FREQUENCY: {packet.DeltaFrequency}] [DB: {packet.SNR}] {packet.Message}'
         )
 
@@ -487,35 +490,35 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             return
 
         latest_data = call_coll.find_one_and_delete(
-            {'callsign': data['callsign'], 'band': band, 'mode': mode}
+            {'callsign': data['callsign'], 'band': states_list['band'], 'mode': states_list['mode']}
         ) or {}
         latest_data.pop('_id', None)
         if latest_data:
             logging.warning(
-                f'[DB] [MODE: {mode}] [BAND: {band}] '
+                f'[DB] [MODE: {states_list["mode"]}] [BAND: {states_list["band"]}] '
                 f'[CALLSIGN: {latest_data["callsign"]}] Removing {latest_data["Message"]}'
             )
 
         additional_data = {
-            'band': band,
-            'mode': mode
+            'band': states_list['band'],
+            'mode': states_list['mode']
         }
         completing_data(
             data,
             additional_data,
             now,
             latest_data or message_coll.find_one(
-                {'callsign': data['callsign'], 'band': band, 'mode': mode}
+                {'callsign': data['callsign'], 'band': states_list['band'], 'mode': states_list['mode']}
             ) or {}
         )
 
         message_coll.update_one(
-            {'callsign': data['callsign'], 'band': band, 'mode': mode},
+            {'callsign': data['callsign'], 'band': states_list['band'], 'mode': states_list['mode']},
             {'$set': data},
             upsert=True
         )
 
-        if states.num_inactive_before_cut and data['callsign'] == LOCAL_STATES['current_callsign']:
+        if states_list['num_inactive_before_cut'] and data['callsign'] == LOCAL_STATES['current_callsign']:
             states.inactive_count = 0
 
         if data['type'] == 'CQ':
