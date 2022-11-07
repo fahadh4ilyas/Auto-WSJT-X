@@ -179,7 +179,7 @@ def completing_data(data: dict, additional_data: dict, now: float = None, latest
     
     return data
 
-def get_states_data(callsign: str) -> dict:
+def get_state_data(callsign: str) -> dict:
 
     data = {}
     if call_info2:
@@ -403,7 +403,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     'mode': current_mode
                 })
                 location_data = get_location_data(current_data['callsign'], current_data)
-                if 'country' not in current_data:
+                if 'country' not in current_data  and all([i in location_data for i in ['country', 'dxcc', 'continent']]):
                     current_data.update({
                         k: location_data[k] for k in ['country', 'dxcc', 'continent']
                     })
@@ -416,9 +416,16 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 current_data.update(grid_data)
                 if current_data.get('grid', None) is None:
                     current_data.pop('grid')
-                if call_info2 and current_data['country'] == 'United States' and 'state' not in current_data:
-                    state_data = get_states_data(current_data['callsign'])
-                    current_data.update(state_data)
+                if call_info2 and current_data.get('country', None) == 'United States' and 'state' not in current_data:
+                    if 'state' in qso_data:
+                        current_data.update(
+                            {
+                                k:qso_data[k] for k in ['state', 'county']
+                            }
+                        )
+                    else:
+                        state_data = get_state_data(current_data['callsign'])
+                        current_data.update(state_data)
                 current_data.pop('_id', None)
                 done_coll.update_one(
                     {'callsign': matched['to'], 'band': current_band, 'mode': current_mode},
