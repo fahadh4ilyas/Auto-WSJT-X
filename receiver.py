@@ -343,7 +343,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                         {'$set': {'expired': True}}
                     )
                 
-                if states_list['transmit_counter'] >= max(states_list['aggresive_level']+2 ,2)*states_list['max_tries']:
+                if states_list['transmit_counter'] >= (states_list['aggresive_level']+2)*states_list['max_tries']:
                     states.change_states(
                         tries = 0,
                         inactive_count = 0,
