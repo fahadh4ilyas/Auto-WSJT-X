@@ -304,7 +304,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     'inactive_count',
                     'tries',
                     'max_tries',
-                    'transmit_counter'
+                    'transmit_counter',
+                    'aggresive_level'
                 )
 
                 if states_list['tries'] >= result.get('tries', states_list['max_tries']):
@@ -343,7 +344,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                         {'$set': {'expired': True}}
                     )
                 
-                if states_list['transmit_counter'] >= 2*states_list['max_tries']:
+                if states_list['transmit_counter'] >= max(states_list['aggresive_level']+2 ,2)*states_list['max_tries']:
                     states.change_states(
                         tries = 0,
                         inactive_count = 0,
@@ -463,7 +464,9 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
         states_list = states.get_states(
             'band',
             'mode',
-            'num_inactive_before_cut'
+            'num_inactive_before_cut',
+            'aggresive_level',
+            'tries'
         )
 
         if MIN_FREQUENCY <= packet.DeltaFrequency <= MAX_FREQUENCY:
@@ -556,6 +559,9 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 f'[CALLSIGN: {data["callsign"]}] Adding {data["Message"]}'
             )
             data['importance'] = 1 + priority_country.get(data['country'], 0)
+            if data['isNewDXCC'] and states_list['aggresive_level']:
+                data['importance'] += 0.5
+                data['tries'] = (states_list['aggresive_level']+1)*states_list['tries']
             call_coll.update_one(
                 {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
                 {'$set': data},
@@ -577,6 +583,12 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     )
                     data['importance'] = 4 + priority_country.get(data['country'], 0)
                     data['isSpam'] = latest_data.get('isSpam', False)
+                    if states_list['aggresive_level']: 
+                        if data['isNewDXCC']:
+                            data['importance'] += 0.5
+                            data['tries'] = (states_list['aggresive_level']+1)*states_list['tries']
+                        else:
+                            data['tries'] = 1
                     call_coll.update_one(
                         {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
                         {'$set': data},
@@ -612,6 +624,9 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     f'[CALLSIGN: {data["callsign"]}] Adding {data["Message"]}'
                 )
                 data['importance'] = 1 + priority_country.get(data['country'], 0)
+                if states_list['aggresive_level'] and data['isNewDXCC']:
+                    data['importance'] += 0.5
+                    data['tries'] = (states_list['aggresive_level']+1)*states_list['tries']
                 call_coll.update_one(
                     {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
                     {'$set': data},
@@ -635,6 +650,12 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 )
                 data['importance'] = 1 + priority_country.get(data['country'], 0)
                 data['isSpam'] = latest_data.get('isSpam', False)
+                if states_list['aggresive_level']: 
+                    if data['isNewDXCC']:
+                        data['importance'] += 0.5
+                        data['tries'] = (states_list['aggresive_level']+1)*states_list['tries']
+                    else:
+                        data['tries'] = 1
                 call_coll.update_one(
                     {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
                     {'$set': data},
@@ -677,6 +698,10 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     data['importance'] = 1 + priority_country.get(data['country'], 0)
                     data['tries'] = 2
                     data['tried'] = latest_data.get('tried', False)
+                    if states_list['aggresive_level'] and data['isNewDXCC']:
+                        data['importance'] += 0.5
+                        data['tries'] = (states_list['aggresive_level']+1)*states_list['tries']
+                        data['tried'] = False
                     call_coll.update_one(
                         {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
                         {'$set': data},
@@ -693,6 +718,12 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 )
                 data['importance'] = 2 + priority_country.get(data['country'], 0)
                 data['isSpam'] = latest_data.get('isSpam', False)
+                if states_list['aggresive_level']: 
+                    if data['isNewDXCC']:
+                        data['importance'] += 0.5
+                        data['tries'] = (states_list['aggresive_level']+1)*states_list['tries']
+                    else:
+                        data['tries'] = 1
                 call_coll.update_one(
                     {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
                     {'$set': data},
@@ -735,6 +766,10 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     data['importance'] = 1 + priority_country.get(data['country'], 0)
                     data['tries'] = 2
                     data['tried'] = latest_data.get('tried', False)
+                    if states_list['aggresive_level'] and data['isNewDXCC']:
+                        data['importance'] += 0.5
+                        data['tries'] = (states_list['aggresive_level']+1)*states_list['tries']
+                        data['tried'] = False
                     call_coll.update_one(
                         {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
                         {'$set': data},
@@ -751,6 +786,12 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 )
                 data['importance'] = 3 + priority_country.get(data['country'], 0)
                 data['isSpam'] = latest_data.get('isSpam', False)
+                if states_list['aggresive_level']: 
+                    if data['isNewDXCC']:
+                        data['importance'] += 0.5
+                        data['tries'] = (states_list['aggresive_level']+1)*states_list['tries']
+                    else:
+                        data['tries'] = 2
                 call_coll.update_one(
                     {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
                     {'$set': data},
@@ -793,6 +834,10 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     data['importance'] = 1 + priority_country.get(data['country'], 0)
                     data['tries'] = 2
                     data['tried'] = latest_data.get('tried', False)
+                    if states_list['aggresive_level'] and data['isNewDXCC']:
+                        data['importance'] += 0.5
+                        data['tries'] = (states_list['aggresive_level']+1)*states_list['tries']
+                        data['tried'] = False
                     call_coll.update_one(
                         {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
                         {'$set': data},
@@ -817,6 +862,7 @@ def init(sock: socket.socket):
     states.new_grid = NEW_GRID
     states.new_dxcc = NEW_DXCC
     states.min_db = MIN_DB
+    states.aggresive_level = AGGRESIVE_LEVEL
     states.num_inactive_before_cut = NUM_INACTIVE_BEFORE_CUT
     states.max_tries = MAX_TRIES
 

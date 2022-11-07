@@ -42,6 +42,7 @@ class States(object):
             'inactive_count': int,
             'tries': int,
             'transmit_counter': int,
+            'aggresive_level': int,
             'num_inactive_before_cut': int,
             'max_tries': int,
             'max_tries_change_freq': int,
@@ -267,6 +268,14 @@ class States(object):
 
     # CONFIGURABLE PARAMS
     # ==========================================================
+    @property
+    def aggresive_level(self) -> int:
+        return int(self.r.get('aggresive_level') or 0)
+    
+    @aggresive_level.setter
+    def aggresive_level(self, val: int):
+        self.r.set('aggresive_level', val)
+
     @property
     def num_inactive_before_cut(self) -> int:
         return int(self.r.get('num_inactive_before_cut') or 0)

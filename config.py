@@ -65,6 +65,11 @@ MAX_FREQUENCY = 2200
 # restart receiver + transmitter
 EXPIRED_TIME = 0
 
+# Level of aggresiveness towards new DXCC message
+# Set to 0 to disable aggresiveness
+# restart receiver + transmitter
+AGGRESIVE_LEVEL = 0
+
 # List of DXCC that callsign will not be in queue
 # restart receiver + transmitter
 DXCC_EXCEPTION = [
