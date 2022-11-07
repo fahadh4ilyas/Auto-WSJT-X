@@ -419,7 +419,23 @@ class States(object):
         packet.NewTxMsgIdx = 8
 
         self.sock.sendto(packet.raw(), (self.ip, self.port))
-    
+
+    def enable_gridtx(self):
+        packet = wsjtx.WSEnableTx()
+        packet.NewTxMsgIdx = 10
+        packet.SkipGrid = False
+        packet.Offset = 0
+
+        self.sock.sendto(packet.raw(), (self.ip, self.port))
+
+    def disable_gridtx(self):
+        packet = wsjtx.WSEnableTx()
+        packet.NewTxMsgIdx = 10
+        packet.SkipGrid = True
+        packet.Offset = 0
+
+        self.sock.sendto(packet.raw(), (self.ip, self.port))
+
     def change_frequency(self, TXdf: int):
         packet = wsjtx.WSEnableTx()
         packet.NewTxMsgIdx = 10
