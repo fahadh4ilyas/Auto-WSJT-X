@@ -51,6 +51,12 @@ NUM_INACTIVE_BEFORE_CUT = 0
 # restart receiver + transmitter
 MAX_TRIES = 3
 
+# Disable transmit button every number of tims
+# set to 0 means disable only when no message queue
+# set to 1 means always disable after every transmit
+# restart receiver + transmitter
+NUM_DISABLE_TRANSMIT = 1
+
 # Minimum DB of message to be replied
 # restart receiver + transmitter
 MIN_DB = -20

@@ -43,6 +43,7 @@ class States(object):
             'tries': int,
             'transmit_counter': int,
             'num_inactive_before_cut': int,
+            'num_disable_transmit': int,
             'max_tries': int,
             'max_tries_change_freq': int,
             'min_db': int,
@@ -274,6 +275,14 @@ class States(object):
     @num_inactive_before_cut.setter
     def num_inactive_before_cut(self, val: int):
         self.r.set('num_inactive_before_cut', val)
+
+    @property
+    def num_disable_transmit(self) -> int:
+        return int(self.r.get('num_disable_transmit') or 0)
+    
+    @num_disable_transmit.setter
+    def num_disable_transmit(self, val: int):
+        self.r.set('num_disable_transmit', val)
 
     @property
     def max_tries(self) -> int:

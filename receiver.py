@@ -39,6 +39,8 @@ LOCAL_STATES = {
     'current_callsign': ''
 }
 
+ENABLE_TRANSMIT_COUNTER = 0
+
 if MULTICAST:
     sock_wsjt = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 else:
@@ -188,7 +190,7 @@ def get_state_data(callsign: str) -> dict:
 
 
 def process_wsjt(_data: bytes, ip_from: tuple, states: States):
-    global callsign_exc, LOCAL_STATES
+    global callsign_exc, LOCAL_STATES, ENABLE_TRANSMIT_COUNTER
 
     try:
         packet = wsjtx.ft8_decode(_data)
@@ -230,7 +232,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             'band',
             'dx_callsign',
             'mode',
-            'transmitting'
+            'transmitting',
+            'num_disable_transmit'
         )
 
         latest_band = states_list['band']
@@ -240,6 +243,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
         current_dx = packet.DXGrid or ''
         current_mode = packet.Mode
         isTransmitting = packet.Transmitting and states_list['transmitting'] != packet.Transmitting
+        isDoneTransmitting = not packet.Transmitting and states_list['transmitting'] != packet.Transmitting
         isChangingBand = latest_band != 0 and latest_band != current_band
         isChangingMode = latest_mode != '' and latest_mode != current_mode
         isChangingDX = latest_dx != '' and latest_dx != current_dx
@@ -438,6 +442,12 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                         f'[DB] [MODE: {current_mode}] [BAND: {current_band}] '
                         f'[CALLSIGN: {matched["to"]}] Removing {result["Message"]}'
                     )
+
+        if isDoneTransmitting and states_list['num_disable_transmit'] and states.transmitter_started:
+            ENABLE_TRANSMIT_COUNTER = (ENABLE_TRANSMIT_COUNTER + 1) % states_list['num_disable_transmit']
+            if ENABLE_TRANSMIT_COUNTER == 0:
+                states.disable_transmit()
+                states.enable_monitoring()
 
         if isChangingBand:
             logging.warning('Changing band by user!')
@@ -831,6 +841,7 @@ def init(sock: socket.socket):
     states.new_dxcc = NEW_DXCC
     states.min_db = MIN_DB
     states.num_inactive_before_cut = NUM_INACTIVE_BEFORE_CUT
+    states.num_disable_transmit = NUM_DISABLE_TRANSMIT
     states.max_tries = MAX_TRIES
 
     if QRZ_API_KEY:
