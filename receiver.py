@@ -79,7 +79,7 @@ def filter_cq(data: dict) -> bool:
     ):
         return True
     
-    if states.new_dxcc and 'dxcc' in data and not data['isNewDXCC']:
+    if states.new_dxcc and 'dxcc' in data and data['isNewDXCC']:
         return True
     
     return False
@@ -152,15 +152,14 @@ def completing_data(data: dict, additional_data: dict, now: float = None, latest
     data['expired'] = False
     data['tried'] = False
     data['isSpam'] = False
-    data['isNewCallsign'] = latest_data.get('isNewCallsign', not not done_coll.find_one(
+    data['isNewCallsign'] = latest_data.get('isNewCallsign', not done_coll.find_one(
         {
             'callsign': data['callsign'],
-            'band': data['band'],
             'mode': data['mode'],
             **QSO_FILTER
         }
     ))
-    data['isNewDXCC'] = latest_data.get('isNewDXCC', not not done_coll.find_one(
+    data['isNewDXCC'] = latest_data.get('isNewDXCC', not done_coll.find_one(
         {
             'dxcc': data.get('dxcc', 0),
             'band': data['band'],
@@ -441,11 +440,13 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             logging.warning('Changing band by user!')
             logging.warning(f'[DB] [MODE: {latest_mode}] [BAND: {latest_band}] Removing all message!')
             call_coll.delete_many({'band': latest_band, 'mode': latest_mode})
+            message_coll.delete_many({'band': latest_band, 'mode': latest_mode})
         
         if isChangingMode:
             logging.warning('Changing mode by user!')
             logging.warning(f'[DB] [MODE: {latest_mode}] Removing all message!')
             call_coll.delete_many({'mode': latest_mode})
+            message_coll.delete_many({'mode': latest_mode})
 
         states.change_states(
             band = current_band,
