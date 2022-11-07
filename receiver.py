@@ -69,7 +69,7 @@ def filter_cq(data: dict) -> bool:
         if data['extra'] in ['OC', 'AS']:
             return True
         
-    if states.new_grid and 'grid' in data and not done_coll.find_one(
+    if 'grid' in data and states.new_grid and not done_coll.find_one(
         {
             'grid': data['grid'],
             'band': data['band'],
@@ -79,7 +79,7 @@ def filter_cq(data: dict) -> bool:
     ):
         return True
     
-    if states.new_dxcc and 'dxcc' in data and data['isNewDXCC']:
+    if data['isNewDXCC'] and states.new_dxcc:
         return True
     
     return False
