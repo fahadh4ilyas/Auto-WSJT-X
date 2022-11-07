@@ -84,21 +84,6 @@ def filter_cq(data: dict) -> bool:
     
     return False
 
-def filter_blacklist(data: dict) -> bool:
-
-
-    if done_coll.find_one(
-        {
-            'callsign': data['callsign'],
-            'band': data['band'],
-            'mode': data['mode'],
-            **QSO_FILTER
-        }
-    ):
-        return False
-    
-    return True
-
 def parsing_message(message: str) -> dict:
     message_type = ''
     matching = None
@@ -167,6 +152,14 @@ def completing_data(data: dict, additional_data: dict, now: float = None, latest
     data['expired'] = False
     data['tried'] = False
     data['isSpam'] = False
+    data['isNewCallsign'] = latest_data.get('isNewCallsign', not not done_coll.find_one(
+        {
+            'callsign': data['callsign'],
+            'band': data['band'],
+            'mode': data['mode'],
+            **QSO_FILTER
+        }
+    ))
     data['isNewDXCC'] = latest_data.get('isNewDXCC', not not done_coll.find_one(
         {
             'dxcc': data.get('dxcc', 0),
@@ -547,7 +540,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     )
                 return
 
-            if not filter_blacklist(data):
+            if not data['isNewCallsign']:
                 logging.warning('The Callsign is already blacklisted!')
                 return
 
@@ -603,7 +596,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                         )
                     return
                 
-                if not filter_blacklist(data):
+                if not data['isNewCallsign']:
                     logging.warning('The Callsign is already blacklisted!')
                     return
 
@@ -666,7 +659,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 
                 else:
 
-                    if not filter_blacklist(data):
+                    if not data['isNewCallsign']:
                         logging.warning('The Callsign is already blacklisted!')
                         return
 
@@ -724,7 +717,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 
                 else:
 
-                    if not filter_blacklist(data):
+                    if not data['isNewCallsign']:
                         logging.warning('The Callsign is already blacklisted!')
                         return
 
@@ -782,7 +775,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 
                 else:
 
-                    if not filter_blacklist(data):
+                    if not data['isNewCallsign']:
                         logging.warning('The Callsign is already blacklisted!')
                         return
 
