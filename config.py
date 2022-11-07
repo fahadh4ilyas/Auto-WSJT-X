@@ -120,4 +120,8 @@ TIMING = {
 
 if NUM_INACTIVE_BEFORE_CUT >= MAX_TRIES:
     raise ValueError('MIN_INACTIVE_BEFORE_CUT MUST BE LESS THAN MAX_TRIES')
+
+QSO_FILTER = {}
+if WORK_ON_UNCONFIRMED_QSO:
+    QSO_FILTER = {'confirmed': True}
 # #########################################################################

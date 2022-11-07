@@ -70,38 +70,32 @@ def filter_cq(data: dict) -> bool:
             return True
         
     if states.new_grid and 'grid' in data and not done_coll.find_one(
-        {'grid': data['grid'], 'band': data['band'], 'mode': data['mode']}
+        {
+            'grid': data['grid'],
+            'band': data['band'],
+            'mode': data['mode'],
+            **QSO_FILTER
+        }
     ):
         return True
     
-    if states.new_dxcc and 'dxcc' in data and not done_coll.find_one(
-        {'dxcc': data['dxcc'], 'band': data['band'], 'mode': data['mode']}
-    ):
+    if states.new_dxcc and 'dxcc' in data and not data['isNewDXCC']:
         return True
     
     return False
 
 def filter_blacklist(data: dict) -> bool:
 
-    if WORK_ON_UNCONFIRMED_QSO:
-        if done_coll.find_one(
-            {
-                'callsign': data['callsign'],
-                'band': data['band'],
-                'mode': data['mode'],
-                'confirmed': True
-            }
-        ):
-            return False
-    else:
-        if done_coll.find_one(
-            {
-                'callsign': data['callsign'],
-                'band': data['band'],
-                'mode': data['mode']
-            }
-        ):
-            return False
+
+    if done_coll.find_one(
+        {
+            'callsign': data['callsign'],
+            'band': data['band'],
+            'mode': data['mode'],
+            **QSO_FILTER
+        }
+    ):
+        return False
     
     return True
 
@@ -173,6 +167,14 @@ def completing_data(data: dict, additional_data: dict, now: float = None, latest
     data['expired'] = False
     data['tried'] = False
     data['isSpam'] = False
+    data['isNewDXCC'] = latest_data.get('isNewDXCC', not not done_coll.find_one(
+        {
+            'dxcc': data.get('dxcc', 0),
+            'band': data['band'],
+            'mode': data['mode'],
+            **QSO_FILTER
+        }
+    ))
     data['timestamp'] = now or datetime.now().timestamp()
     
     return data
