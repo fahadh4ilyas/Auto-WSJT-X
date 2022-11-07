@@ -62,7 +62,7 @@ MAX_FREQUENCY = 2200
 
 # Maximum time callsign in queue in seconds
 # Set to 0 will make the callsign in queue indefinitely
- # restart receiver + transmitter
+# restart receiver + transmitter
 EXPIRED_TIME = 0
 
 # List of DXCC that callsign will not be in queue
