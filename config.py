@@ -1,10 +1,12 @@
+import os
 from pymongo import ASCENDING, DESCENDING
 from dotenv import dotenv_values
 
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Config that can be edited from .env file
 # =========================================================================================
-CONNECTION_CONFIG = dotenv_values('.env')
+CONNECTION_CONFIG = dotenv_values(os.path.join(CURRENT_DIR, '.env'))
 
 WSJTX_IP = CONNECTION_CONFIG['WSJTX_IP']
 WSJTX_PORT = int(CONNECTION_CONFIG['WSJTX_PORT'])
@@ -82,7 +84,7 @@ DXCC_EXCEPTION = [
 
 # List of DXCC based on priority
 # restart receiver + transmitter
-DXCC_WANTED = 'data/wanted_list.txt'
+DXCC_PRIORITY = os.path.join(CURRENT_DIR, 'data', 'priority_list.txt')
 
 # Will change frequency every this number of time
 # Set to 1 will always to change frequency every transmit
@@ -97,11 +99,11 @@ SORTBY = [
 ]
 
 # Only used for adif_parser.py
-LOG_LOCATION = 'data/log.adi'
+LOG_LOCATION = os.path.join(CURRENT_DIR, 'data', 'log.adi')
 
 # List of callsign that user want to be blacklisted
 # Restarting receiver + transmitter is not required (but recommended)
-CALLSIGN_EXCEPTION = 'data/Callsign_Exception.txt'
+CALLSIGN_EXCEPTION = os.path.join(CURRENT_DIR, 'data', 'Callsign_Exception.txt')
 # ===================================================================
 
 

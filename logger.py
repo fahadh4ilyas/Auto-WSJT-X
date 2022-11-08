@@ -1,8 +1,8 @@
-import socket, select, wsjtx, struct, typing
+import os, socket, select, wsjtx, struct, typing
 
 from pyhamtools.frequency import freq_to_band
 
-from config import MULTICAST, WSJTX_IP, WSJTX_PORT, DEBUGGING
+from config import CURRENT_DIR, MULTICAST, WSJTX_IP, WSJTX_PORT, DEBUGGING
 import logging
 from logging import handlers
 
@@ -112,7 +112,7 @@ def main(sock: socket.socket):
             break
     
 if __name__ == '__main__':
-    file_handlers = handlers.RotatingFileHandler('log/message.log', maxBytes=10*1024*1024, backupCount=5)
+    file_handlers = handlers.RotatingFileHandler(os.path.join(CURRENT_DIR, 'log', 'message.log'), maxBytes=10*1024*1024, backupCount=5)
     file_handlers.setLevel(logging.INFO)
     stream_handlers = logging.StreamHandler()
     stream_handlers.setLevel(logging.DEBUG if DEBUGGING else logging.INFO)
