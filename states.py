@@ -2,6 +2,17 @@ import json, redis, socket, wsjtx
 
 from enum import Enum
 
+TIMING = {
+    'FT4': {
+        'half': 7.5,
+        'full': 15
+    },
+    'FT8': {
+        'half': 15,
+        'full': 30
+    }
+}
+
 class TxSequence(Enum):
     EVEN = 14
     ODD = 15
@@ -447,12 +458,14 @@ class States(object):
 
         self.sock.sendto(packet.raw(), (self.ip, self.port))
     
-    def reply(self, decoded_message: dict, TXdf: int = None, skipGrid: bool = True):
-        isEven = self.tx_even
-        if 0 <= decoded_message['Time']/1000%30 < 15:
-            if isEven:
-                self.change_transmit_sequence(TxSequence.ODD)
-        elif not isEven:
+    def reply(self, decoded_message: dict, TXdf: int = None, skipGrid: bool = True, txOdd: bool = None):
+        global TIMING
+        
+        if txOdd is None:
+            txOdd = (0 <= decoded_message['Time']/1000%TIMING[self.mode]['full'] < TIMING[self.mode]['half'])
+        if txOdd:
+            self.change_transmit_sequence(TxSequence.ODD)
+        else:
             self.change_transmit_sequence(TxSequence.EVEN)
 
         if not self.tx_enabled:
