@@ -11,6 +11,8 @@ from adif_parser import main as adif_parser, db, done_coll, call_info, call_info
 import logging
 from logging import handlers
 
+IP_LOCK = []
+
 DXCC_EXCEPTION = [country_to_dxcc.get(i,0) for i in DXCC_EXCEPTION]
 
 callsign_exc = []
@@ -190,7 +192,7 @@ def get_state_data(callsign: str) -> dict:
 
 
 def process_wsjt(_data: bytes, ip_from: tuple, states: States):
-    global callsign_exc, LOCAL_STATES
+    global callsign_exc, LOCAL_STATES, IP_LOCK
 
     try:
         packet = wsjtx.ft8_decode(_data)
@@ -198,13 +200,21 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
         logging.exception('Something not right!')
         return
 
+    if not IP_LOCK:
+        IP_LOCK = [ip_from[0], ip_from[1]]
+
+    states.change_states(
+        ip = ip_from[0],
+        port = ip_from[1],
+        receiver_started = True
+    )
+
     if isinstance(packet, wsjtx.WSHeartbeat):
 
         logging.info(f'IP: {ip_from[0]} | Port: {ip_from[1]}')
-        states.ip = ip_from[0]
-        states.port = ip_from[1]
-        states.closed = False
-        states.receiver_started = True
+        states.change_states(
+            closed = False
+        )
         if CALLSIGN_EXCEPTION:
             try:
                 with open(CALLSIGN_EXCEPTION) as f:
@@ -884,6 +894,7 @@ def init(sock: socket.socket):
         sock.bind((WSJTX_IP, WSJTX_PORT))
 
 def main(sock: socket.socket, states: States):
+    global IP_LOCK
 
     ip_from = None
     socks = [sock]
@@ -896,7 +907,8 @@ def main(sock: socket.socket, states: States):
             fds, _, _ = typing.cast(typing.Tuple[typing.List[socket.socket], list, list], t)
             for fdin in fds:
                 _data, ip_from = fdin.recvfrom(1024)
-                process_wsjt(_data, ip_from, states)
+                if IP_LOCK and IP_LOCK[0] == ip_from[0] and IP_LOCK[1] == ip_from[1]:
+                    process_wsjt(_data, ip_from, states)
         except KeyboardInterrupt:
             call_coll.delete_many({})
             message_coll.delete_many({})
