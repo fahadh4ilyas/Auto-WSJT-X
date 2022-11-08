@@ -928,7 +928,7 @@ if __name__ == '__main__':
     stream_handlers = logging.StreamHandler()
     stream_handlers.setLevel(logging.DEBUG if DEBUGGING else logging.INFO)
     logging.basicConfig(
-        format='[%(levelname)s] [%(asctime)s]: %(message)s',
+        format='[%(asctime)s] [%(levelname)s] %(message)s',
         level=logging.DEBUG,
         handlers=[
             file_handlers,
