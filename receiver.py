@@ -23,7 +23,7 @@ if CALLSIGN_EXCEPTION:
     except:
         pass
 
-with open(DXCC_WANTED) as f:
+with open(DXCC_PRIORITY) as f:
     priority_country_list = f.read().splitlines()
     length_priority_country_list = len(priority_country_list)
     priority_country = dict(
@@ -969,7 +969,7 @@ def main(sock: socket.socket, states: States):
             break
     
 if __name__ == '__main__':
-    file_handlers = handlers.RotatingFileHandler('log/receiver.log', maxBytes=10*1024*1024, backupCount=5)
+    file_handlers = handlers.RotatingFileHandler(os.path.join(CURRENT_DIR, 'log', 'receiver.log'), maxBytes=10*1024*1024, backupCount=5)
     file_handlers.setLevel(logging.INFO)
     stream_handlers = logging.StreamHandler()
     stream_handlers.setLevel(logging.DEBUG if DEBUGGING else logging.INFO)

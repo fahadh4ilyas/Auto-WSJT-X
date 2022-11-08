@@ -145,7 +145,7 @@ def main():
             break
 
 if __name__ == '__main__':
-    file_handlers = handlers.RotatingFileHandler('log/transmitter.log', maxBytes=10*1024*1024, backupCount=5)
+    file_handlers = handlers.RotatingFileHandler(os.path.join(CURRENT_DIR, 'log', 'transmitter.log'), maxBytes=10*1024*1024, backupCount=5)
     file_handlers.setLevel(logging.INFO)
     stream_handlers = logging.StreamHandler()
     stream_handlers.setLevel(logging.DEBUG if DEBUGGING else logging.INFO)

@@ -14,7 +14,7 @@ lookup_lib = LookupLib(filename='data/cty.plist')
 call_info = Callinfo(lookup_lib)
 
 with open('data/countrytodxcc.json') as f:
-    country_to_dxcc = json.load(f)
+    country_to_dxcc: dict = json.load(f)
 
 mongo_client = MongoClient(MONGO_HOST, MONGO_PORT)
 
