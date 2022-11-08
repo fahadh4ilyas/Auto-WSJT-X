@@ -152,6 +152,7 @@ def completing_data(data: dict, additional_data: dict, now: float = None, latest
     data['expired'] = False
     data['tried'] = False
     data['isSpam'] = False
+    data['isEven'] = (0 <= (data['Time']/1000)%TIMING[data['mode']]['full'] < TIMING[data['mode']]['half'])
     data['skipGrid'] = True
     data['isNewCallsign'] = latest_data.get('isNewCallsign', not done_coll.find_one(
         {
