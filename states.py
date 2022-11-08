@@ -424,17 +424,29 @@ class States(object):
 
     def enable_gridtx(self):
         packet = wsjtx.WSEnableTx()
-        packet.NewTxMsgIdx = 10
+        packet.NewTxMsgIdx = 17
         packet.SkipGrid = False
-        packet.Offset = 0
 
         self.sock.sendto(packet.raw(), (self.ip, self.port))
 
     def disable_gridtx(self):
         packet = wsjtx.WSEnableTx()
-        packet.NewTxMsgIdx = 10
+        packet.NewTxMsgIdx = 17
         packet.SkipGrid = True
-        packet.Offset = 0
+
+        self.sock.sendto(packet.raw(), (self.ip, self.port))
+    
+    def use_RR73(self):
+        packet = wsjtx.WSEnableTx()
+        packet.NewTxMsgIdx = 18
+        packet.UseRR73 = True
+
+        self.sock.sendto(packet.raw(), (self.ip, self.port))
+
+    def use_RRR(self):
+        packet = wsjtx.WSEnableTx()
+        packet.NewTxMsgIdx = 18
+        packet.UseRR73 = False
 
         self.sock.sendto(packet.raw(), (self.ip, self.port))
 
@@ -471,6 +483,11 @@ class States(object):
         if not self.tx_enabled:
             self.enable_transmit()
 
+        if skipGrid:
+            self.disable_gridtx()
+        else:
+            self.enable_gridtx()
+
         packet = wsjtx.WSReply()
         packet.Time = decoded_message['Time']
         packet.SNR = decoded_message['SNR']
@@ -483,11 +500,6 @@ class States(object):
 
         if isinstance(TXdf, int):
             self.change_frequency(TXdf)
-        
-        if skipGrid:
-            self.disable_gridtx()
-        else:
-            self.enable_gridtx()
     
     def log_qso(self):
         packet = wsjtx.WSEnableTx()
