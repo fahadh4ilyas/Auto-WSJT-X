@@ -202,7 +202,7 @@ def get_state_data(callsign: str) -> dict:
 def get_transmit_data_type(data: dict) -> str:
     global NEXT_TRANSMIT, LOCAL_STATES
 
-    return NEXT_TRANSMIT.get(data['complete_to'] == LOCAL_STATES['my_callsign'], {}).get(data['type'], 'SNR')
+    return NEXT_TRANSMIT.get(data.get('complete_to', None) == LOCAL_STATES['my_callsign'], {}).get(data['type'], 'SNR')
 
 def process_wsjt(_data: bytes, ip_from: tuple, states: States):
     global callsign_exc, LOCAL_STATES, IP_LOCK
