@@ -907,8 +907,9 @@ def main(sock: socket.socket, states: States):
             fds, _, _ = typing.cast(typing.Tuple[typing.List[socket.socket], list, list], t)
             for fdin in fds:
                 _data, ip_from = fdin.recvfrom(1024)
-                if IP_LOCK and IP_LOCK[0] == ip_from[0] and IP_LOCK[1] == ip_from[1]:
-                    process_wsjt(_data, ip_from, states)
+                if IP_LOCK and (IP_LOCK[0] != ip_from[0] or IP_LOCK[1] != ip_from[1]):
+                    continue
+                process_wsjt(_data, ip_from, states)
         except KeyboardInterrupt:
             call_coll.delete_many({})
             message_coll.delete_many({})
