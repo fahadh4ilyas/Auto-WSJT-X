@@ -41,6 +41,15 @@ LOCAL_STATES = {
     'current_callsign': ''
 }
 
+NEXT_TRANSMIT = {
+    True: {
+        'GRID': 'SNR',
+        'SNR': 'RSNR',
+        'RSNR': 'R73',
+        'R73': 'R73'
+    }
+}
+
 if MULTICAST:
     sock_wsjt = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 else:
@@ -190,6 +199,10 @@ def get_state_data(callsign: str) -> dict:
     
     return data
 
+def get_transmit_data_type(data: dict) -> str:
+    global NEXT_TRANSMIT, LOCAL_STATES
+
+    return NEXT_TRANSMIT.get(data['complete_to'] == LOCAL_STATES['my_callsign'], {}).get(data['type'], 'SNR')
 
 def process_wsjt(_data: bytes, ip_from: tuple, states: States):
     global callsign_exc, LOCAL_STATES, IP_LOCK
@@ -617,8 +630,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                         f'[CALLSIGN: {data["callsign"]}] Adding {data["Message"]}'
                     )
                     data['importance'] = 4 + priority_country.get(data['country'], 0)
-                    if latest_data and latest_data.get('complete_to', None) == LOCAL_STATES['my_callsign'] and \
-                        latest_data['type'] == data['type']:
+                    if latest_data and get_transmit_data_type(latest_data) == get_transmit_data_type(data):
                         data['isSpam'] = latest_data.get('isSpam', False)
                     if states_list['aggresive_level']: 
                         if data['isNewDXCC']:
@@ -686,8 +698,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     f'[CALLSIGN: {data["callsign"]}] Adding {data["Message"]}'
                 )
                 data['importance'] = 1 + priority_country.get(data['country'], 0)
-                if latest_data and latest_data.get('complete_to', None) == LOCAL_STATES['my_callsign'] and \
-                    latest_data['type'] == data['type']:
+                if latest_data and get_transmit_data_type(latest_data) == get_transmit_data_type(data):
                     data['isSpam'] = latest_data.get('isSpam', False)
                 if states_list['aggresive_level']: 
                     if data['isNewDXCC']:
@@ -756,8 +767,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     f'[CALLSIGN: {data["callsign"]}] Adding {data["Message"]}'
                 )
                 data['importance'] = 2 + priority_country.get(data['country'], 0)
-                if latest_data and latest_data.get('complete_to', None) == LOCAL_STATES['my_callsign'] and \
-                    latest_data['type'] == data['type']:
+                if latest_data and get_transmit_data_type(latest_data) == get_transmit_data_type(data):
                     data['isSpam'] = latest_data.get('isSpam', False)
                 if states_list['aggresive_level']: 
                     if data['isNewDXCC']:
@@ -826,8 +836,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     f'[CALLSIGN: {data["callsign"]}] Adding {data["Message"]}'
                 )
                 data['importance'] = 3 + priority_country.get(data['country'], 0)
-                if latest_data and latest_data.get('complete_to', None) == LOCAL_STATES['my_callsign'] and \
-                    latest_data['type'] == data['type']:
+                if latest_data and get_transmit_data_type(latest_data) == get_transmit_data_type(data):
                     data['isSpam'] = latest_data.get('isSpam', False)
                 if states_list['aggresive_level']: 
                     if data['isNewDXCC']:
