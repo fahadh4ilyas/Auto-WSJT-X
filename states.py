@@ -452,7 +452,7 @@ class States(object):
 
     def change_frequency(self, TXdf: int):
         packet = wsjtx.WSEnableTx()
-        packet.NewTxMsgIdx = 10
+        packet.NewTxMsgIdx = 19
         packet.Offset = TXdf
 
         self.sock.sendto(packet.raw(), (self.ip, self.port))
