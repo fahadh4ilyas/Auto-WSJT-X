@@ -938,6 +938,8 @@ def init(sock: socket.socket):
         sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
     else:
         sock.bind((WSJTX_IP, WSJTX_PORT))
+    
+    logging.info('Done Initializing!')
 
 def main(sock: socket.socket, states: States):
     global IP_LOCK
