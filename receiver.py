@@ -727,6 +727,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     data['importance'] = 1 + priority_country.get(data['country'], 0)
                     data['tries'] = 2
                     data['tried'] = latest_data.get('tried', False)
+                    data['isSpam'] = latest_data.get('isSpam', False)
                     call_coll.update_one(
                         {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
                         {'$set': data},
@@ -786,6 +787,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     data['importance'] = 1 + priority_country.get(data['country'], 0)
                     data['tries'] = 2
                     data['tried'] = latest_data.get('tried', False)
+                    data['isSpam'] = latest_data.get('isSpam', False)
                     call_coll.update_one(
                         {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
                         {'$set': data},
@@ -845,6 +847,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     data['importance'] = 1 + priority_country.get(data['country'], 0)
                     data['tries'] = 2
                     data['tried'] = latest_data.get('tried', False)
+                    data['isSpam'] = latest_data.get('isSpam', False)
                     call_coll.update_one(
                         {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
                         {'$set': data},
