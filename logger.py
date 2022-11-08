@@ -67,7 +67,7 @@ def process_wsjt(_data: bytes, ip_from: tuple):
         logging.info(f'[HOST: {ip_from[0]}:{ip_from[1]}] LOGGED ADIF: {packet.ADIF}')
 
     elif isinstance(packet, wsjtx.WSClose):
-        logging.info(f'[HOST: {ip_from[0]}:{ip_from[1]}] CLOSED!!!')
+        logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] CLOSED!!!')
         LOCAL_STATES[f'{ip_from[0]}:{ip_from[1]}'] = False
 
     else:
@@ -102,7 +102,7 @@ def main(sock: socket.socket):
                 _data, ip_from = fdin.recvfrom(1024)
                 ip_str = f'{ip_from[0]}:{ip_from[1]}'
                 if not LOCAL_STATES.get(ip_str, False):
-                    logging.info(f'[HOST: {ip_str}] OPENED!!!')
+                    logging.warning(f'[HOST: {ip_str}] OPENED!!!')
                     LOCAL_STATES[ip_str] = True
                 process_wsjt(_data, ip_from)
         except KeyboardInterrupt:
