@@ -748,6 +748,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     data['importance'] = 1 + priority_country.get(data['country'], 0)
                     data['tries'] = 2
                     data['tried'] = latest_data.get('tried', False)
+                    data['isSpam'] = latest_data.get('isSpam', False)
                     if states_list['aggresive_level'] and data['isNewDXCC']:
                         data['importance'] += 0.5
                         data['tries'] = (states_list['aggresive_level']+1)*states_list['tries']
@@ -817,6 +818,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     data['importance'] = 1 + priority_country.get(data['country'], 0)
                     data['tries'] = 2
                     data['tried'] = latest_data.get('tried', False)
+                    data['isSpam'] = latest_data.get('isSpam', False)
                     if states_list['aggresive_level'] and data['isNewDXCC']:
                         data['importance'] += 0.5
                         data['tries'] = (states_list['aggresive_level']+1)*states_list['tries']
@@ -886,6 +888,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     data['importance'] = 1 + priority_country.get(data['country'], 0)
                     data['tries'] = 2
                     data['tried'] = latest_data.get('tried', False)
+                    data['isSpam'] = latest_data.get('isSpam', False)
                     if states_list['aggresive_level'] and data['isNewDXCC']:
                         data['importance'] += 0.5
                         data['tries'] = (states_list['aggresive_level']+1)*states_list['tries']
