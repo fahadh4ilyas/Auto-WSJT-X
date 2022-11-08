@@ -106,6 +106,7 @@ def init():
     states.max_tries_change_freq = MAX_TRIES_CHANGE_FREQUENCY
     states.enable_monitoring()
     states.change_frequency((MAX_FREQUENCY+MIN_FREQUENCY)//2)
+    states.use_RR73()
     logging.info('Done Initializing!')
 
 def main():
