@@ -47,9 +47,11 @@ class States(object):
             'last_tx': str,
             'tx_even': bool,
             'transmitter_started': bool,
+            'transmitter_paused': bool,
             'receiver_started': bool,
             'transmit_phase': bool,
             'current_callsign': str,
+            'current_rx': int,
             'inactive_count': int,
             'tries': int,
             'transmit_counter': int,
@@ -205,6 +207,14 @@ class States(object):
     @transmitter_started.setter
     def transmitter_started(self, val: bool):
         self.r.set('transmitter_started', 1 if val else '')
+
+    @property
+    def transmitter_paused(self) -> bool:
+        return not not self.r.get('transmitter_paused')
+    
+    @transmitter_paused.setter
+    def transmitter_paused(self, val: bool):
+        self.r.set('transmitter_paused', 1 if val else '')
     
     @property
     def receiver_started(self) -> bool:
@@ -253,6 +263,14 @@ class States(object):
     @current_callsign.setter
     def current_callsign(self, val: str):
         self.r.set('current_callsign', val)
+
+    @property
+    def current_rx(self) -> int:
+        return int(self.r.get('current_rx') or 0)
+    
+    @current_rx.setter
+    def current_rx(self, val: int):
+        self.r.set('current_rx', val)
 
     @property
     def inactive_count(self) -> int:
