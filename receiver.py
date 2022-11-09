@@ -210,22 +210,13 @@ def get_transmit_data_type(data: dict) -> str:
     ).get(data['type'], 'SNR' if data.get('skipGrid', True) else 'GRID')
 
 def process_wsjt(_data: bytes, ip_from: tuple, states: States):
-    global callsign_exc, LOCAL_STATES, IP_LOCK
+    global callsign_exc, LOCAL_STATES
 
     try:
         packet = wsjtx.ft8_decode(_data)
     except (IOError, NotImplementedError):
         logging.exception('Something not right!')
         return
-
-    if not IP_LOCK:
-        IP_LOCK = [ip_from[0], ip_from[1]]
-
-    states.change_states(
-        ip = ip_from[0],
-        port = ip_from[1],
-        receiver_started = True
-    )
 
     if isinstance(packet, wsjtx.WSHeartbeat):
 
@@ -951,6 +942,8 @@ def init(sock: socket.socket, states: States):
         sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
     else:
         sock.bind((WSJTX_IP, WSJTX_PORT))
+
+    states.receiver_started = True
     
     logging.info('Done Initializing!')
 
@@ -970,6 +963,15 @@ def main(sock: socket.socket, states_list: typing.Dict[str, States]):
                 _data, ip_from = fdin.recvfrom(1024)
                 if IP_LOCK and (IP_LOCK[0] != ip_from[0] or IP_LOCK[1] != ip_from[1]):
                     continue
+                if not IP_LOCK:
+                    IP_LOCK = [ip_from[0], ip_from[1]]
+                    states_list[''].change_states(
+                        ip = ip_from[0],
+                        port = ip_from[1]
+                    )
+                    states_list[''].enable_monitoring()
+                    states_list[''].change_frequency((MAX_FREQUENCY+MIN_FREQUENCY)//2)
+                    states_list[''].use_RR73()
                 process_wsjt(_data, ip_from, states_list[''])
         except KeyboardInterrupt:
             call_coll.delete_many({})
