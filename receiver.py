@@ -273,17 +273,20 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 f'[FREQUENCY: {states.txdf}] {packet_last_tx}'
             )
 
-            states.current_callsign = packet.DXCall or ''
-            LOCAL_STATES['current_callsign'] = packet.DXCall or ''
-
             matched = parsing_message(packet_last_tx)
             latest_tx = states.last_tx
             matched_latest = parsing_message(latest_tx)
 
             isDifferent = latest_tx != packet_last_tx
-            states.last_tx = packet_last_tx
-            isSameMessage = matched['type'] == matched_latest.get('type', None) and \
-                matched['to'] == matched_latest.get('to', None)
+
+            states.change_states(
+                current_callsign = matched.get('current_callsign', ''),
+                last_tx = packet_last_tx
+            )
+            LOCAL_STATES['current_callsign'] = matched.get('current_callsign', '')
+
+            isSameMessage = matched.get('type', None) == matched_latest.get('type', None) and \
+                matched.get('to', None) == matched_latest.get('to', None)
 
             if EXPIRED_TIME:
                 call_coll.update_many(
