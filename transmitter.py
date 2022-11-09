@@ -18,7 +18,6 @@ STATES_LIST: typing.Dict[str, States] = {
 }
 
 IS_EVEN = None
-STATES_LIST_LOCAL = {}
 
 def calculate_best_frequency(freq: list) -> int:
 
@@ -50,7 +49,7 @@ def replying(states: States, CURRENT_DATA: dict, txOdd: bool, renew_frequency: b
     return True
 
 def transmitting(now: float, states: States):
-    global IS_EVEN, STATES_LIST_LOCAL
+    global IS_EVEN
 
     if states.transmit_phase:
         states.enable_monitoring()
@@ -115,7 +114,7 @@ def init(states: States):
 def main(states_list: typing.Dict[str, States]):
     
     logging.info('Waiting for receiver receive heartbeat...')
-    while not states_list[''].receiver_started or states_list[''].mode == '':
+    while not states_list[''].receiver_started:
         now = datetime.now().timestamp()
         time.sleep(0.5)
 
@@ -125,7 +124,7 @@ def main(states_list: typing.Dict[str, States]):
             if states_list[''].closed:
                 raise ValueError('WSJT-X Closed!')
             now = datetime.now().timestamp()
-            if now%TIMING[states_list[''].mode]['half'] < TIMING[states_list[''].mode]['half'] - 0.1:
+            if now%TIMING['FT8']['half'] < TIMING['FT8']['half'] - 0.1:
                 time.sleep(0.02)
                 continue
             if not states_list[''].receiver_started:
