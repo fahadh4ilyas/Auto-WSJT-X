@@ -532,7 +532,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
         states_list = states.get_states(
             'band',
             'mode',
-            'num_inactive_before_cut'
+            'num_inactive_before_cut',
+            'num_tries_call_busy'
         )
 
         if MIN_FREQUENCY <= packet.DeltaFrequency <= MAX_FREQUENCY:
@@ -746,7 +747,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                         f'[CALLSIGN: {data["callsign"]}] Adding {data["Message"]}'
                     )
                     data['importance'] = 1 + priority_country.get(data['country'], 0)
-                    data['tries'] = 2
+                    data['tries'] = states_list['num_tries_call_busy']
                     data['tried'] = latest_data.get('tried', False)
                     data['isSpam'] = latest_data.get('isSpam', False)
                     call_coll.update_one(
@@ -806,7 +807,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                         f'[CALLSIGN: {data["callsign"]}] Adding {data["Message"]}'
                     )
                     data['importance'] = 1 + priority_country.get(data['country'], 0)
-                    data['tries'] = 2
+                    data['tries'] = states_list['num_tries_call_busy']
                     data['tried'] = latest_data.get('tried', False)
                     data['isSpam'] = latest_data.get('isSpam', False)
                     call_coll.update_one(
@@ -866,7 +867,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                         f'[CALLSIGN: {data["callsign"]}] Adding {data["Message"]}'
                     )
                     data['importance'] = 1 + priority_country.get(data['country'], 0)
-                    data['tries'] = 2
+                    data['tries'] = states_list['num_tries_call_busy']
                     data['tried'] = latest_data.get('tried', False)
                     data['isSpam'] = latest_data.get('isSpam', False)
                     call_coll.update_one(
@@ -894,6 +895,7 @@ def init(sock: socket.socket, states: States):
     states.new_dxcc = NEW_DXCC
     states.min_db = MIN_DB
     states.num_inactive_before_cut = NUM_INACTIVE_BEFORE_CUT
+    states.num_tries_call_busy = NUM_TRIES_CALL_BUSY
     states.num_disable_transmit = NUM_DISABLE_TRANSMIT
     states.max_tries = MAX_TRIES
 
