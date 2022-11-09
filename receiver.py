@@ -472,10 +472,10 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             if states_list['num_disable_transmit']:
                 if states_list['transmitter_started']:
                     value = (states_list['enable_transmit_counter'] + 1) % states_list['num_disable_transmit']
+                    time.sleep(0.5)
                     if value == 0:
-                        time.sleep(0.2)
                         states.disable_transmit()
-                        states.enable_monitoring()
+                    states.enable_monitoring()
                 else:
                     value = 0
                 states.enable_transmit_counter = value
