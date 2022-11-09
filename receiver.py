@@ -50,6 +50,10 @@ NEXT_TRANSMIT = {
     }
 }
 
+STATES_LIST: typing.Dict[str, States] = {
+    '': States(REDIS_HOST, REDIS_PORT, MULTICAST)
+}
+
 if MULTICAST:
     sock_wsjt = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 else:
@@ -60,13 +64,11 @@ sock_wsjt.setblocking(False) # Set socket to non-blocking mode
 sock_wsjt.setblocking(0)
 bind_addr = socket.gethostbyname(WSJTX_IP)
 
-states = States(REDIS_HOST, REDIS_PORT, multicast=MULTICAST)
-
 grid_coll = db.grid
 call_coll = db.calls
 message_coll = db.message
 
-def filter_cq(data: dict) -> bool:
+def filter_cq(data: dict, states: States) -> bool:
 
     if data['SNR'] < states.min_db:
         return False
@@ -246,6 +248,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
         states.change_states(
             my_callsign = packet.DeCall or '',
             my_grid = packet.DeGrid or '',
+            dx_callsign = packet.DXCall or '',
             dx_grid = packet.DXGrid or '',
             tx_enabled = packet.TXEnabled,
             decoding = packet.Decoding,
@@ -256,31 +259,20 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
         states_list = states.get_states(
             'band',
-            'dx_callsign',
             'mode',
             'transmitting'
         )
 
         latest_band = states_list['band']
-        latest_dx = states_list['dx_callsign']
         latest_mode = states_list['mode']
         current_band: int = freq_to_band(packet.Frequency//1000)['band']
-        current_dx = packet.DXGrid or ''
         current_mode = packet.Mode
         isTransmitting = packet.Transmitting and states_list['transmitting'] != packet.Transmitting
         isDoneTransmitting = not packet.Transmitting and states_list['transmitting'] != packet.Transmitting
         isChangingBand = latest_band != 0 and latest_band != current_band
         isChangingMode = latest_mode != '' and latest_mode != current_mode
-        isChangingDX = latest_dx != '' and latest_dx != current_dx
 
         states.transmitting = packet.Transmitting
-
-        if isChangingDX:
-            states.change_states(
-                dx_callsign = current_dx,
-                current_callsign = current_dx
-            )
-            LOCAL_STATES['current_callsign'] = current_dx
 
         if isTransmitting:
             packet_last_tx = packet.LastTxMsg or ''
@@ -289,6 +281,9 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 f'[TX] [MODE: {current_mode}] [BAND: {current_band}] '
                 f'[FREQUENCY: {states.txdf}] {packet_last_tx}'
             )
+
+            states.current_callsign = packet.DXCall or ''
+            LOCAL_STATES['current_callsign'] = packet.DXCall or ''
 
             matched = parsing_message(packet_last_tx)
             latest_tx = states.last_tx
@@ -601,7 +596,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 logging.warning('The Callsign is already blacklisted!')
                 return
 
-            if not filter_cq(data):
+            if not filter_cq(data, states):
                 logging.warning('The Callsign is not following criteria!')
                 return
 
@@ -667,7 +662,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     logging.warning('The Callsign is already blacklisted!')
                     return
 
-                if not filter_cq(data):
+                if not filter_cq(data, states):
                     logging.warning('The Callsign is not following criteria!')
                     return
 
@@ -740,7 +735,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                         logging.warning('The Callsign is already blacklisted!')
                         return
 
-                    if not filter_cq(data):
+                    if not filter_cq(data, states):
                         logging.warning('The Callsign is not following criteria!')
                         return
 
@@ -811,7 +806,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                         logging.warning('The Callsign is already blacklisted!')
                         return
 
-                    if not filter_cq(data):
+                    if not filter_cq(data, states):
                         logging.warning('The Callsign is not following criteria!')
                         return
 
@@ -882,7 +877,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                         logging.warning('The Callsign is already blacklisted!')
                         return
 
-                    if not filter_cq(data):
+                    if not filter_cq(data, states):
                         logging.warning('The Callsign is not following criteria!')
                         return
 
@@ -916,7 +911,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
     else:
         logging.debug(packet)
 
-def init(sock: socket.socket):
+def init(sock: socket.socket, states: States):
 
     logging.info('Initializing...')
     states.r.flushdb()
@@ -959,13 +954,13 @@ def init(sock: socket.socket):
     
     logging.info('Done Initializing!')
 
-def main(sock: socket.socket, states: States):
+def main(sock: socket.socket, states_list: typing.Dict[str, States]):
     global IP_LOCK
 
     ip_from = None
     socks = [sock]
 
-    init(sock)
+    init(sock, states_list[''])
 
     while True:
         try:
@@ -975,16 +970,16 @@ def main(sock: socket.socket, states: States):
                 _data, ip_from = fdin.recvfrom(1024)
                 if IP_LOCK and (IP_LOCK[0] != ip_from[0] or IP_LOCK[1] != ip_from[1]):
                     continue
-                process_wsjt(_data, ip_from, states)
+                process_wsjt(_data, ip_from, states_list[''])
         except KeyboardInterrupt:
             call_coll.delete_many({})
             message_coll.delete_many({})
-            states.receiver_started = False
+            states_list[''].receiver_started = False
             break
         except:
             call_coll.delete_many({})
             message_coll.delete_many({})
-            states.receiver_started = False
+            states_list[''].receiver_started = False
             logging.exception('Something not right!')
             break
     
@@ -1001,4 +996,4 @@ if __name__ == '__main__':
             stream_handlers
         ])
     
-    main(sock_wsjt, states)
+    main(sock_wsjt, STATES_LIST)
