@@ -318,7 +318,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 if matched.get('type', 'CQ') != 'CQ':
                     result = call_coll.find_one(
                         {'callsign': matched['to'], 'band': current_band, 'mode': current_mode}
-                    )
+                    ) or {}
                 
                 states_list = states.get_states(
                     'num_inactive_before_cut',
