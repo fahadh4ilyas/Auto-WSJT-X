@@ -245,7 +245,6 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             dx_grid = packet.DXGrid or '',
             tx_enabled = packet.TXEnabled,
             decoding = packet.Decoding,
-            rxdf = packet.RXdf,
             txdf = packet.TXdf,
             tx_even = packet.TxEven
         )
@@ -253,19 +252,45 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
         states_list = states.get_states(
             'band',
             'mode',
-            'transmitting'
+            'transmitting',
+            'rxdf',
+            'current_rx'
         )
 
         latest_band = states_list['band']
         latest_mode = states_list['mode']
+        latest_rxdf = states_list['rxdf']
         current_band: int = freq_to_band(packet.Frequency//1000)['band']
         current_mode = packet.Mode
+        current_rxdf = packet.RXdf
         isTransmitting = packet.Transmitting and states_list['transmitting'] != packet.Transmitting
         isDoneTransmitting = not packet.Transmitting and states_list['transmitting'] != packet.Transmitting
         isChangingBand = latest_band != 0 and latest_band != current_band
         isChangingMode = latest_mode != '' and latest_mode != current_mode
+        isChangingRXdf = latest_rxdf != 0 and latest_rxdf != current_rxdf
 
-        states.transmitting = packet.Transmitting
+        states.change_states(
+            transmitting = packet.Transmitting,
+            rxdf = current_rxdf
+        )
+
+        if isChangingRXdf and (
+            states_list['current_rx'] != current_rxdf or
+            now%TIMING[current_mode]['half'] < TIMING[current_mode]['half'] - 0.1):
+            logging.warning(f'Detecting intervention!')
+            states.transmitter_paused = True
+            states.transmitter_started = False
+
+            packet_last_tx = packet.LastTxMsg or ''
+
+            matched = parsing_message(packet_last_tx)
+
+            if matched:
+                call_coll.delete_one({
+                    'callsign': matched['to'],
+                    'band': current_band,
+                    'mode': current_mode
+                })
 
         if isTransmitting:
             packet_last_tx = packet.LastTxMsg or ''
@@ -321,7 +346,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 if matched.get('type', 'CQ') != 'CQ':
                     result = call_coll.find_one(
                         {'callsign': matched['to'], 'band': current_band, 'mode': current_mode}
-                    )
+                    ) or {}
                 
                 states_list = states.get_states(
                     'num_inactive_before_cut',

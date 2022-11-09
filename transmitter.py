@@ -20,6 +20,9 @@ STATES_LIST: typing.Dict[str, States] = {
 IS_EVEN = None
 LATEST_NAMESPACE = ''
 
+class TransmitterPaused(Exception):
+    pass
+
 def calculate_best_frequency(freq: list) -> int:
 
     d = sorted(set(freq))
@@ -44,6 +47,7 @@ def replying(states: States, CURRENT_DATA: dict, txOdd: bool, renew_frequency: b
     if renew_frequency:
         logging.info(f'[HOST: {CURRENT_DATA["namespace"]}] Finding best frequency')
         best_frequency = calculate_best_frequency(frequencies)
+    states.current_rx = CURRENT_DATA['DeltaFrequency']
     states.reply(CURRENT_DATA, best_frequency, CURRENT_DATA.get('skipGrid', True), txOdd)
     states.transmit_phase = True
     logging.info(f'[HOST: {CURRENT_DATA["namespace"]}] Replying to: '+CURRENT_DATA['callsign'])
@@ -51,6 +55,9 @@ def replying(states: States, CURRENT_DATA: dict, txOdd: bool, renew_frequency: b
 
 def transmitting(now: float, states_list: typing.Dict[str, States]):
     global IS_EVEN, LATEST_NAMESPACE
+
+    if states_list[''].transmitter_paused:
+        raise TransmitterPaused()
 
     if states_list[''].transmit_phase:
         states_list[''].transmit_phase = False
@@ -126,6 +133,7 @@ def init(states: States):
     logging.info('Done Initializing!')
 
 def main(states_list: typing.Dict[str, States]):
+    global IS_EVEN
     
     logging.info('Waiting for receiver receive heartbeat...')
     while not states_list[''].receiver_started:
@@ -145,8 +153,18 @@ def main(states_list: typing.Dict[str, States]):
                 raise ValueError('Receiver Stopped!')
             transmitting(now, states_list)
             time.sleep(0.5)
+        except TransmitterPaused:
+            states_list[''].transmitter_started = False
+            states_list[''].transmit_phase = False
+            IS_EVEN = None
+            if input('Resume transmit? (y/n) ') == 'n':
+                break
+            states_list[''].transmitter_started = True
+            states_list[''].transmitter_paused = False
         except KeyboardInterrupt:
             states_list[''].transmitter_started = False
+            states_list[''].transmit_phase = False
+            IS_EVEN = None
             for k, states in states_list.items():
                 if k == '':
                     continue
@@ -156,6 +174,7 @@ def main(states_list: typing.Dict[str, States]):
             if input('Stop transmit? (y/n) ') == 'y':
                 break
             states_list[''].transmitter_started = True
+            states_list[''].transmitter_paused = False
         except:
             states_list[''].transmitter_started = False
             for k, states in states_list.items():
