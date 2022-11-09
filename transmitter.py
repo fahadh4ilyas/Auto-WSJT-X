@@ -124,6 +124,7 @@ def transmitting(now: float, states_list: typing.Dict[str, States]):
         IS_EVEN,
         STATES_LIST_LOCAL['tries']%STATES_LIST_LOCAL['max_tries_change_freq'] == 0
     )
+    time.sleep(TIMING[CURRENT_DATA['mode']]['half']/2)
 
 def init(states: States):
     logging.info('Initializing...')
