@@ -87,9 +87,10 @@ def transmitting(now: float, states: States):
         IS_EVEN = None
         states.current_callsign = ''
         states.enable_transmit_counter = 0
-        states.disable_transmit()
-        states.clear_message()
-        states.enable_monitoring()
+        if states.ip != '':
+            states.disable_transmit()
+            states.clear_message()
+            states.enable_monitoring()
         return
     
     message_time = CURRENT_DATA['isEven']
@@ -130,7 +131,7 @@ def main(states_list: typing.Dict[str, States]):
             time.sleep(0.5)
         except KeyboardInterrupt:
             states_list[''].transmitter_started = False
-            for states in states_list.values():
+            for k, states in states_list.items():
                 states.halt_transmit()
                 states.disable_transmit()
                 states.clear_message()
@@ -139,7 +140,7 @@ def main(states_list: typing.Dict[str, States]):
             states_list[''].transmitter_started = True
         except:
             states_list[''].transmitter_started = False
-            for states in states_list.values():
+            for k, states in states_list.items():
                 states.halt_transmit()
                 states.disable_transmit()
                 states.clear_message()
