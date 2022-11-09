@@ -139,6 +139,7 @@ def transmitting(now: float, states: States):
         STATES_LIST_LOCAL['transmit_counter'] > 0,
         STATES_LIST_LOCAL['current_callsign'] != CURRENT_DATA['callsign']
     )
+    time.sleep(TIMING[CURRENT_DATA['mode']]['half']/2)
 
 def init(states: States):
     logging.info('Initializing...')
