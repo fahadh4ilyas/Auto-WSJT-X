@@ -33,14 +33,39 @@ def calculate_best_frequency(freq: list) -> int:
     
     return curr_best
 
-def replying(states: States, CURRENT_DATA: dict, txOdd: bool, renew_frequency: bool = True) -> bool:
+def calculate_best_close_frequency(states: States, freq: list) -> int:
+
+    d = sorted(set(freq))
+
+    initial_frequency = states.initial_frequency
+
+    if initial_frequency - MIN_FREQUENCY < MAX_FREQUENCY - initial_frequency:
+        curr_best = MIN_FREQUENCY
+        curr_min = initial_frequency - MIN_FREQUENCY
+    else:
+        curr_best = MAX_FREQUENCY
+        curr_min = MAX_FREQUENCY - initial_frequency
+
+    for left,right in zip(d, d[1:]):
+        middle = (right+left)//2
+        difference = abs(middle - initial_frequency)
+        if difference < curr_min:
+            curr_best = middle
+            curr_min = difference
+    
+    return curr_best
+
+def replying(states: States, CURRENT_DATA: dict, txOdd: bool, renew_frequency: bool = True, revert_back: bool = False) -> bool:
 
     if txOdd:
         frequencies = states.even_frequencies
     else:
         frequencies = states.odd_frequencies
     best_frequency = None
-    if renew_frequency:
+    if revert_back:
+        logging.info('Return to best closest to initial frequency')
+        best_frequency = calculate_best_close_frequency(states, frequencies)
+    elif renew_frequency:
         logging.info('Finding best frequency')
         best_frequency = calculate_best_frequency(frequencies)
     states.reply(CURRENT_DATA, best_frequency, CURRENT_DATA.get('skipGrid', True), txOdd)
@@ -60,8 +85,8 @@ def transmitting(now: float, states: States):
     STATES_LIST_LOCAL = states.get_states(
         'band',
         'mode',
-        'tries',
-        'max_tries_change_freq'
+        'transmit_counter',
+        'current_callsign'
     )
     
     logging.info('Finding new message to reply')
@@ -100,13 +125,19 @@ def transmitting(now: float, states: States):
     
     IS_EVEN = message_time
         
-    replying(states, CURRENT_DATA, IS_EVEN, STATES_LIST_LOCAL['tries']%STATES_LIST_LOCAL['max_tries_change_freq'] == 0)
+    replying(
+        states,
+        CURRENT_DATA,
+        IS_EVEN,
+        STATES_LIST_LOCAL['transmit_counter'] > 0,
+        STATES_LIST_LOCAL['current_callsign'] != CURRENT_DATA['callsign']
+    )
 
 def init(states: States):
     logging.info('Initializing...')
     states.transmitter_started = True
     states.sort_by = SORTBY
-    states.max_tries_change_freq = MAX_TRIES_CHANGE_FREQUENCY
+    states.initial_frequency = INITIAL_FREQUENCY
     logging.info('Done Initializing!')
 
 def main(states_list: typing.Dict[str, States]):

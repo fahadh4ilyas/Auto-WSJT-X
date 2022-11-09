@@ -57,8 +57,8 @@ class States(object):
             'num_inactive_before_cut': int,
             'num_disable_transmit': int,
             'max_tries': int,
-            'max_tries_change_freq': int,
             'min_db': int,
+            'initial_frequency': int,
             'new_grid': bool,
             'new_dxcc': bool
         }
@@ -313,14 +313,6 @@ class States(object):
         self.r.set('max_tries', val)
 
     @property
-    def max_tries_change_freq(self) -> int:
-        return int(self.r.get('max_tries_change_freq') or 0)
-    
-    @max_tries_change_freq.setter
-    def max_tries_change_freq(self, val: int):
-        self.r.set('max_tries_change_freq', val)
-
-    @property
     def sort_by(self) -> list:
         return [json.loads(s) for s in self.r.lrange('sort_by', 0, -1)]
     
@@ -337,6 +329,14 @@ class States(object):
     @min_db.setter
     def min_db(self, val: int):
         self.r.set('min_db', val)
+
+    @property
+    def initial_frequency(self) -> int:
+        return int(self.r.get('initial_frequency') or 0)
+    
+    @initial_frequency.setter
+    def initial_frequency(self, val: int):
+        self.r.set('initial_frequency', val)
 
     @property
     def new_grid(self) -> bool:

@@ -86,10 +86,11 @@ DXCC_EXCEPTION = [
 # restart receiver + transmitter
 DXCC_PRIORITY = os.path.join(CURRENT_DIR, 'data', 'priority_list.txt')
 
-# Will change frequency every this number of time
-# Set to 1 will always to change frequency every transmit
+
+# Initial frequency to transmit message
+# Must be between MIN_FREQUENCY and MAX_FREQUENCY
 # restart transmitter
-MAX_TRIES_CHANGE_FREQUENCY = 2
+INITIAL_FREQUENCY = 1500
 
 # The sorting of queue based on
 # The sorting is always based on importance
@@ -128,6 +129,9 @@ TIMING = {
 
 if NUM_INACTIVE_BEFORE_CUT >= MAX_TRIES:
     raise ValueError('MIN_INACTIVE_BEFORE_CUT MUST BE LESS THAN MAX_TRIES')
+
+if not (MIN_FREQUENCY <= INITIAL_FREQUENCY <= MAX_FREQUENCY):
+    raise ValueError('INITIAL_FREQUENCY not in between MIN_FREQUENCY and MAX_FREQUENCY')
 
 QSO_FILTER = {}
 if WORK_ON_UNCONFIRMED_QSO:

@@ -924,7 +924,7 @@ def main(sock: socket.socket, states_list: typing.Dict[str, States]):
                         port = ip_from[1]
                     )
                     states_list[''].enable_monitoring()
-                    states_list[''].change_frequency((MAX_FREQUENCY+MIN_FREQUENCY)//2)
+                    states_list[''].change_frequency(INITIAL_FREQUENCY)
                     states_list[''].use_RR73()
                 process_wsjt(_data, ip_from, states_list[''])
         except KeyboardInterrupt:
