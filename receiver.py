@@ -95,6 +95,9 @@ def filter_cq(data: dict, states: States) -> bool:
     if data['isNewDXCC'] and states.new_dxcc:
         return True
     
+    if data['isNewCallsign']:
+        return True
+    
     return False
 
 def parsing_message(message: str) -> dict:
@@ -170,6 +173,7 @@ def completing_data(data: dict, additional_data: dict, now: float = None, latest
     data['isNewCallsign'] = latest_data.get('isNewCallsign', not done_coll.find_one(
         {
             'callsign': data['callsign'],
+            'band': data['band'],
             'mode': data['mode'],
             **QSO_FILTER
         }
