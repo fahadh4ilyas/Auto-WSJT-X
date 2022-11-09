@@ -53,6 +53,12 @@ NUM_INACTIVE_BEFORE_CUT = 0
 # restart receiver + transmitter
 MAX_TRIES = 3
 
+# Number of tries calling busy callsign
+# Minimum must be set to 1
+# Maximum is 2 * MAX_TRIES - 1
+# restart receiver + transmitter
+NUM_TRIES_CALL_BUSY = 2
+
 # Disable transmit button every number of tims
 # set to 0 means disable only when no message queue
 # set to 1 means always disable after every transmit
@@ -85,7 +91,6 @@ DXCC_EXCEPTION = [
 # List of DXCC based on priority
 # restart receiver + transmitter
 DXCC_PRIORITY = os.path.join(CURRENT_DIR, 'data', 'priority_list.txt')
-
 
 # Initial frequency to transmit message
 # Must be between MIN_FREQUENCY and MAX_FREQUENCY
@@ -129,6 +134,9 @@ TIMING = {
 
 if NUM_INACTIVE_BEFORE_CUT >= MAX_TRIES:
     raise ValueError('MIN_INACTIVE_BEFORE_CUT MUST BE LESS THAN MAX_TRIES')
+
+if not (0 < NUM_TRIES_CALL_BUSY < 2*MAX_TRIES):
+    raise ValueError('NUM_TRIES_CALL_BUSY must be more than 0 and less than 2 * MAX_TRIES')
 
 if not (MIN_FREQUENCY <= INITIAL_FREQUENCY <= MAX_FREQUENCY):
     raise ValueError('INITIAL_FREQUENCY not in between MIN_FREQUENCY and MAX_FREQUENCY')

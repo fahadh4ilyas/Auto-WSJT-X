@@ -95,6 +95,9 @@ def filter_cq(data: dict, states: States) -> bool:
     if data['isNewDXCC'] and states.new_dxcc:
         return True
     
+    if data['isNewCallsign']:
+        return True
+    
     return False
 
 def parsing_message(message: str) -> dict:
@@ -170,6 +173,7 @@ def completing_data(data: dict, additional_data: dict, now: float = None, latest
     data['isNewCallsign'] = latest_data.get('isNewCallsign', not done_coll.find_one(
         {
             'callsign': data['callsign'],
+            'band': data['band'],
             'mode': data['mode'],
             **QSO_FILTER
         }
@@ -274,7 +278,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
         if isChangingRXdf and (
             states_list['current_rx'] != current_rxdf or
-            now%TIMING[current_mode]['half'] < TIMING[current_mode]['half'] - 0.1):
+            1.5 < now%TIMING[current_mode]['half'] < TIMING[current_mode]['half'] - 0.1):
             logging.warning(f'Detecting intervention!')
             states.transmitter_paused = True
             states.transmitter_started = False
@@ -528,7 +532,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
         states_list = states.get_states(
             'band',
             'mode',
-            'num_inactive_before_cut'
+            'num_inactive_before_cut',
+            'num_tries_call_busy'
         )
 
         if MIN_FREQUENCY <= packet.DeltaFrequency <= MAX_FREQUENCY:
@@ -742,7 +747,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                         f'[CALLSIGN: {data["callsign"]}] Adding {data["Message"]}'
                     )
                     data['importance'] = 1 + priority_country.get(data['country'], 0)
-                    data['tries'] = 2
+                    data['tries'] = states_list['num_tries_call_busy']
                     data['tried'] = latest_data.get('tried', False)
                     data['isSpam'] = latest_data.get('isSpam', False)
                     call_coll.update_one(
@@ -802,7 +807,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                         f'[CALLSIGN: {data["callsign"]}] Adding {data["Message"]}'
                     )
                     data['importance'] = 1 + priority_country.get(data['country'], 0)
-                    data['tries'] = 2
+                    data['tries'] = states_list['num_tries_call_busy']
                     data['tried'] = latest_data.get('tried', False)
                     data['isSpam'] = latest_data.get('isSpam', False)
                     call_coll.update_one(
@@ -862,7 +867,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                         f'[CALLSIGN: {data["callsign"]}] Adding {data["Message"]}'
                     )
                     data['importance'] = 1 + priority_country.get(data['country'], 0)
-                    data['tries'] = 2
+                    data['tries'] = states_list['num_tries_call_busy']
                     data['tried'] = latest_data.get('tried', False)
                     data['isSpam'] = latest_data.get('isSpam', False)
                     call_coll.update_one(
@@ -890,6 +895,7 @@ def init(sock: socket.socket, states: States):
     states.new_dxcc = NEW_DXCC
     states.min_db = MIN_DB
     states.num_inactive_before_cut = NUM_INACTIVE_BEFORE_CUT
+    states.num_tries_call_busy = NUM_TRIES_CALL_BUSY
     states.num_disable_transmit = NUM_DISABLE_TRANSMIT
     states.max_tries = MAX_TRIES
 
