@@ -276,23 +276,23 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             rxdf = current_rxdf
         )
 
-        # if isChangingRXdf and (
-        #     states_list['current_rx'] != current_rxdf or
-        #     now%TIMING[current_mode]['half'] < TIMING[current_mode]['half'] - 0.1):
-        #     logging.warning(f'Detecting intervention!')
-        #     states.transmitter_paused = True
-        #     states.transmitter_started = False
+        if isChangingRXdf and (
+            states_list['current_rx'] != current_rxdf or
+            1.5 < now%TIMING[current_mode]['half'] < TIMING[current_mode]['half'] - 0.1):
+            logging.warning(f'Detecting intervention!')
+            states.transmitter_paused = True
+            states.transmitter_started = False
 
-        #     packet_last_tx = packet.LastTxMsg or ''
+            packet_last_tx = packet.LastTxMsg or ''
 
-        #     matched = parsing_message(packet_last_tx)
+            matched = parsing_message(packet_last_tx)
 
-        #     if matched:
-        #         call_coll.delete_one({
-        #             'callsign': matched['to'],
-        #             'band': current_band,
-        #             'mode': current_mode
-        #         })
+            if matched:
+                call_coll.delete_one({
+                    'callsign': matched['to'],
+                    'band': current_band,
+                    'mode': current_mode
+                })
 
         if isTransmitting:
             packet_last_tx = packet.LastTxMsg or ''
