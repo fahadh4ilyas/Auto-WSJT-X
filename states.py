@@ -58,6 +58,7 @@ class States(object):
             'enable_transmit_counter': int,
             'aggresive_level': int,
             'num_inactive_before_cut': int,
+            'num_tries_call_busy': int,
             'num_disable_transmit': int,
             'max_tries': int,
             'max_tries_change_freq': int,
@@ -322,6 +323,14 @@ class States(object):
     @num_inactive_before_cut.setter
     def num_inactive_before_cut(self, val: int):
         self.r.set('num_inactive_before_cut', val)
+
+    @property
+    def num_tries_call_busy(self) -> int:
+        return int(self.r.get('num_tries_call_busy') or 0)
+    
+    @num_tries_call_busy.setter
+    def num_tries_call_busy(self, val: int):
+        self.r.set('num_tries_call_busy', val)
 
     @property
     def num_disable_transmit(self) -> int:
