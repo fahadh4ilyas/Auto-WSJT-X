@@ -277,7 +277,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
         if isChangingRXdf and (
             states_list['current_rx'] != current_rxdf or
             now%TIMING[current_mode]['half'] < TIMING[current_mode]['half'] - 0.1):
-            logging.warning(f'Detecting intervention!')
+            logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] Detecting intervention!')
             states.transmitter_paused = True
             states.transmitter_started = False
 
