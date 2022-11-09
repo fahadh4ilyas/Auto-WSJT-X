@@ -18,7 +18,7 @@ STATES_LIST: typing.Dict[str, States] = {
 }
 
 IS_EVEN = None
-STATES_LIST_LOCAL = {}
+LATEST_NAMESPACE = ''
 
 def calculate_best_frequency(freq: list) -> int:
 
@@ -42,23 +42,22 @@ def replying(states: States, CURRENT_DATA: dict, txOdd: bool, renew_frequency: b
         frequencies = states.odd_frequencies
     best_frequency = None
     if renew_frequency:
-        logging.info('Finding best frequency')
+        logging.info(f'[HOST: {CURRENT_DATA["namespace"]}] Finding best frequency')
         best_frequency = calculate_best_frequency(frequencies)
     states.reply(CURRENT_DATA, best_frequency, CURRENT_DATA.get('skipGrid', True), txOdd)
     states.transmit_phase = True
-    logging.info('Replying to: '+CURRENT_DATA['callsign'])
+    logging.info(f'[HOST: {CURRENT_DATA["namespace"]}] Replying to: '+CURRENT_DATA['callsign'])
     return True
 
-def transmitting(now: float, states: States):
-    global IS_EVEN, STATES_LIST_LOCAL
+def transmitting(now: float, states_list: typing.Dict[str, States]):
+    global IS_EVEN, LATEST_NAMESPACE
 
-    if states.transmit_phase:
-        states.enable_monitoring()
-        states.transmit_phase = False
+    if states_list[''].transmit_phase:
+        states_list[''].transmit_phase = False
         time.sleep(0.5)
         return
 
-    STATES_LIST_LOCAL = states.get_states(
+    STATES_LIST_LOCAL = states_list[''].get_states(
         'band',
         'mode',
         'tries',
@@ -73,7 +72,7 @@ def transmitting(now: float, states: States):
             'expired': False,
             'tried': False,
             'isSpam': False},
-            sort=states.sort_by) or {}
+            sort=states_list[''].sort_by) or {}
     else:
         CURRENT_DATA = call_coll.find_one({
             'mode': STATES_LIST_LOCAL['mode'],
@@ -82,40 +81,54 @@ def transmitting(now: float, states: States):
             'tried': False,
             'isSpam': False,
             'isEven': IS_EVEN},
-            sort=states.sort_by) or {}
+            sort=states_list[''].sort_by) or {}
     
     if not CURRENT_DATA:
         IS_EVEN = None
-        states.current_callsign = ''
-        states.enable_transmit_counter = 0
-        states.disable_transmit()
-        states.clear_message()
-        states.enable_monitoring()
+        states_list[''].current_callsign = ''
+        states_list[''].enable_transmit_counter = 0
+        if LATEST_NAMESPACE:
+            states_list[LATEST_NAMESPACE].disable_transmit()
+            states_list[LATEST_NAMESPACE].clear_message()
+            states_list[LATEST_NAMESPACE].enable_monitoring()
+            LATEST_NAMESPACE = ''
         return
-    
+
     message_time = CURRENT_DATA['isEven']
     current_time = (0 <= now%TIMING[CURRENT_DATA['mode']]['full'] < TIMING[CURRENT_DATA['mode']]['half'])
     if message_time != current_time:
         return
     
     IS_EVEN = message_time
-        
-    replying(states, CURRENT_DATA, IS_EVEN, STATES_LIST_LOCAL['tries']%STATES_LIST_LOCAL['max_tries_change_freq'] == 0)
+    LATEST_NAMESPACE = CURRENT_DATA['namespace']
+
+    if LATEST_NAMESPACE not in states_list:
+        states_list[LATEST_NAMESPACE] = States(
+            REDIS_HOST,
+            REDIS_PORT,
+            MULTICAST,
+            LATEST_NAMESPACE,
+            states_list[''].r.connection_pool
+        )
+
+    replying(
+        states_list[LATEST_NAMESPACE],
+        CURRENT_DATA,
+        IS_EVEN,
+        STATES_LIST_LOCAL['tries']%STATES_LIST_LOCAL['max_tries_change_freq'] == 0
+    )
 
 def init(states: States):
     logging.info('Initializing...')
     states.transmitter_started = True
     states.sort_by = SORTBY
     states.max_tries_change_freq = MAX_TRIES_CHANGE_FREQUENCY
-    states.enable_monitoring()
-    states.change_frequency((MAX_FREQUENCY+MIN_FREQUENCY)//2)
-    states.use_RR73()
     logging.info('Done Initializing!')
 
 def main(states_list: typing.Dict[str, States]):
     
     logging.info('Waiting for receiver receive heartbeat...')
-    while not states_list[''].receiver_started or states_list[''].mode == '':
+    while not states_list[''].receiver_started:
         now = datetime.now().timestamp()
         time.sleep(0.5)
 
@@ -123,18 +136,20 @@ def main(states_list: typing.Dict[str, States]):
     while True:
         try:
             if states_list[''].closed:
-                raise ValueError('WSJT-X Closed!')
+                raise ValueError('All WSJT-X Closed!')
             now = datetime.now().timestamp()
-            if now%TIMING[states_list[''].mode]['half'] < TIMING[states_list[''].mode]['half'] - 0.1:
+            if now%TIMING['FT8']['half'] < TIMING['FT8']['half'] - 0.1:
                 time.sleep(0.02)
                 continue
             if not states_list[''].receiver_started:
                 raise ValueError('Receiver Stopped!')
-            transmitting(now, states_list[''])
+            transmitting(now, states_list)
             time.sleep(0.5)
         except KeyboardInterrupt:
             states_list[''].transmitter_started = False
-            for states in states_list.values():
+            for k, states in states_list.items():
+                if k == '':
+                    continue
                 states.halt_transmit()
                 states.disable_transmit()
                 states.clear_message()
@@ -143,7 +158,9 @@ def main(states_list: typing.Dict[str, States]):
             states_list[''].transmitter_started = True
         except:
             states_list[''].transmitter_started = False
-            for states in states_list.values():
+            for k, states in states_list.items():
+                if k == '':
+                    continue
                 states.halt_transmit()
                 states.disable_transmit()
                 states.clear_message()

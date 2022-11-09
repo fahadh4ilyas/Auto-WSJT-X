@@ -19,19 +19,42 @@ class TxSequence(Enum):
 
 class States(object):
     
-    def __init__(self, redis_host: str = '127.0.0.1', redis_port: int = 6379, multicast: bool = False):
+    def __init__(
+        self,
+        redis_host: str = '127.0.0.1',
+        redis_port: int = 6379,
+        multicast: bool = False,
+        namespace: str = ':',
+        connection_pool: redis.ConnectionPool = None):
         
-        self.r = redis.Redis(host=redis_host, port=redis_port, db=0)
+        self.namespace = namespace
+        self.r = redis.Redis(host=redis_host, port=redis_port, db=0, connection_pool=connection_pool)
 
         if multicast:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
             self.sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 1)
         else:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+        prefix = ''
+        if namespace not in [':', '']:
+            prefix = namespace + ':'
         
-        self.states_types = {
-            'ip': str,
-            'port': int,
+        self.namespaced_states = {
+            k: f'{prefix}{k}' for k in [
+                'dx_callsign',
+                'dx_grid',
+                'tx_enabled',
+                'transmitting',
+                'decoding',
+                'closed',
+                'rxdf',
+                'txdf',
+                'tx_even'
+            ]
+        }
+        
+        self.redis_states_types = {
             'my_callsign': str,
             'my_grid': str,
             'dx_callsign': str,
@@ -63,23 +86,19 @@ class States(object):
             'new_dxcc': bool
         }
 
+    def redis_key(self, state: str) -> str:
+
+        return self.namespaced_states.get(state, state)
+
     # WSJT-X PARAMS
     # ==========================================================
     @property
     def ip(self) -> str:
-        return (self.r.get('ip') or b'').decode()
-    
-    @ip.setter
-    def ip(self, val: str):
-        self.r.set('ip', val)
+        return self.namespace.split(':')[0]
     
     @property
     def port(self) -> int:
-        return int(self.r.get('port') or 0)
-    
-    @port.setter
-    def port(self, val: int):
-        self.r.set('port', val)
+        return int(self.namespace.split(':')[1])
 
     @property
     def my_callsign(self) -> str:
@@ -99,83 +118,83 @@ class States(object):
 
     @property
     def dx_callsign(self) -> str:
-        return (self.r.get('dx_callsign') or b'').decode()
+        return (self.r.get(self.redis_key('dx_callsign')) or b'').decode()
     
     @dx_callsign.setter
     def dx_callsign(self, val: str):
-        self.r.set('dx_callsign', val)
+        self.r.set(self.redis_key('dx_callsign'), val)
 
     @property
     def dx_grid(self) -> str:
-        return (self.r.get('dx_grid') or b'').decode()
+        return (self.r.get(self.redis_key('dx_grid')) or b'').decode()
     
     @dx_grid.setter
     def dx_grid(self, val: str):
-        self.r.set('dx_grid', val)
+        self.r.set(self.redis_key('dx_grid'), val)
     
     @property
     def band(self) -> int:
-        return int(self.r.get('band') or 0)
+        return int(self.r.get(self.redis_key('band')) or 0)
     
     @band.setter
     def band(self, val: int):
-        self.r.set('band', val)
+        self.r.set(self.redis_key('band'), val)
 
     @property
     def mode(self) -> str:
-        return (self.r.get('mode') or b'').decode()
+        return (self.r.get(self.redis_key('mode')) or b'').decode()
     
     @mode.setter
     def mode(self, val: str):
-        self.r.set('mode', val)
+        self.r.set(self.redis_key('mode'), val)
 
     @property
     def tx_enabled(self) -> bool:
-        return not not self.r.get('tx_enabled')
+        return not not self.r.get(self.redis_key('tx_enabled'))
     
     @tx_enabled.setter
     def tx_enabled(self, val: bool):
-        self.r.set('tx_enabled', 1 if val else '')
+        self.r.set(self.redis_key('tx_enabled'), 1 if val else '')
     
     @property
     def transmitting(self) -> bool:
-        return not not self.r.get('transmitting')
+        return not not self.r.get(self.redis_key('transmitting'))
     
     @transmitting.setter
     def transmitting(self, val: bool):
-        self.r.set('transmitting', 1 if val else '')
+        self.r.set(self.redis_key('transmitting'), 1 if val else '')
         
     @property
     def decoding(self) -> bool:
-        return not not self.r.get('decoding')
+        return not not self.r.get(self.redis_key('decoding'))
     
     @decoding.setter
     def decoding(self, val: bool):
-        self.r.set('decoding', 1 if val else '')
+        self.r.set(self.redis_key('decoding'), 1 if val else '')
     
     @property
     def closed(self) -> bool:
-        return not not self.r.get('closed')
+        return not not self.r.get(self.redis_key('closed'))
     
     @closed.setter
     def closed(self, val: bool):
-        self.r.set('closed', 1 if val else '')
+        self.r.set(self.redis_key('closed'), 1 if val else '')
 
     @property
     def rxdf(self) -> int:
-        return int(self.r.get('rxdf') or 0)
+        return int(self.r.get(self.redis_key('rxdf')) or 0)
     
     @rxdf.setter
     def rxdf(self, val: int):
-        self.r.set('rxdf', val)
+        self.r.set(self.redis_key('rxdf'), val)
         
     @property
     def txdf(self) -> int:
-        return int(self.r.get('txdf') or 0)
+        return int(self.r.get(self.redis_key('txdf')) or 0)
     
     @txdf.setter
     def txdf(self, val: int):
-        self.r.set('txdf', val)
+        self.r.set(self.redis_key('txdf'), val)
     
     @property
     def last_tx(self) -> str:
@@ -187,11 +206,11 @@ class States(object):
 
     @property
     def tx_even(self) -> bool:
-        return not not self.r.get('tx_even')
+        return not not self.r.get(self.redis_key('tx_even'))
     
     @tx_even.setter
     def tx_even(self, val: bool):
-        self.r.set('tx_even', 1 if val else '')
+        self.r.set(self.redis_key('tx_even'), 1 if val else '')
     # ==========================================================
 
     # SCRIPT PARAMS
@@ -368,21 +387,21 @@ class States(object):
         with self.r.pipeline() as p:
             for k,val in kwargs.items():
                 if isinstance(val, bool):
-                    p = p.set(k, 1 if val else '')
+                    p = p.set(self.redis_key(k), 1 if val else '')
                 else:
-                    p = p.set(k, val)
+                    p = p.set(self.redis_key(k), val)
                 p.execute()
     
     def get_states(self, *args: str) -> dict:
 
         with self.r.pipeline() as p:
             for k in args:
-                p = p.get(k)
+                p = p.get(self.redis_key(k))
             
             result = dict(zip(args, p.execute()))
         
         for k,v in result.items():
-            k_types = self.states_types.get(k, None)
+            k_types = self.redis_states_types.get(k, None)
             if k_types == bool:
                 result[k] = not not v
             elif k_types == int:

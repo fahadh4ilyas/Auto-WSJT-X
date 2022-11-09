@@ -7,6 +7,7 @@ from pyhamtools.frequency import freq_to_band
 
 from states import States
 from config import *
+from exceptions import *
 from adif_parser import main as adif_parser, db, done_coll, call_info, call_info2, country_to_dxcc
 import logging
 from logging import handlers
@@ -146,7 +147,7 @@ def get_grid_data(
     
     return data
 
-def completing_data(data: dict, additional_data: dict, now: float = None, latest_data: dict = {}) -> dict:
+def completing_data(ip_from: tuple, data: dict, additional_data: dict, now: float = None, latest_data: dict = {}) -> dict:
 
     location_data = get_location_data(data['callsign'], latest_data)
     if location_data:
@@ -167,6 +168,7 @@ def completing_data(data: dict, additional_data: dict, now: float = None, latest
     data['isSpam'] = False
     data['isEven'] = (0 <= (data['Time']/1000)%TIMING[data['mode']]['full'] < TIMING[data['mode']]['half'])
     data['skipGrid'] = True
+    data['namespace'] =f'{ip_from[0]}:{ip_from[1]}'
     data['isNewCallsign'] = latest_data.get('isNewCallsign', not done_coll.find_one(
         {
             'callsign': data['callsign'],
@@ -215,21 +217,12 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
     try:
         packet = wsjtx.ft8_decode(_data)
     except (IOError, NotImplementedError):
-        logging.exception('Something not right!')
+        logging.exception(f'[HOST: {ip_from[0]}:{ip_from[1]}] Something not right!')
         return
-
-    if not IP_LOCK:
-        IP_LOCK = [ip_from[0], ip_from[1]]
-
-    states.change_states(
-        ip = ip_from[0],
-        port = ip_from[1],
-        receiver_started = True
-    )
 
     if isinstance(packet, wsjtx.WSHeartbeat):
 
-        logging.info(f'IP: {ip_from[0]} | Port: {ip_from[1]}')
+        logging.info(f'[HOST: {ip_from[0]}:{ip_from[1]}] Heartbeat...')
         states.change_states(
             closed = False
         )
@@ -243,7 +236,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
     elif isinstance(packet, wsjtx.WSStatus):
 
         now = datetime.now().timestamp()
-        logging.debug(packet)
+        logging.debug(f'[HOST: {ip_from[0]}:{ip_from[1]}] {packet}')
         LOCAL_STATES['my_callsign'] = packet.DeCall or ''
         states.change_states(
             my_callsign = packet.DeCall or '',
@@ -278,6 +271,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             packet_last_tx = packet.LastTxMsg or ''
 
             logging.info(
+                f'[HOST: {ip_from[0]}:{ip_from[1]}] '
                 f'[TX] [MODE: {current_mode}] [BAND: {current_band}] '
                 f'[FREQUENCY: {states.txdf}] {packet_last_tx}'
             )
@@ -472,22 +466,22 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             if states_list['num_disable_transmit']:
                 if states_list['transmitter_started']:
                     value = (states_list['enable_transmit_counter'] + 1) % states_list['num_disable_transmit']
+                    time.sleep(0.5)
                     if value == 0:
-                        time.sleep(0.2)
                         states.disable_transmit()
-                        states.enable_monitoring()
+                    states.enable_monitoring()
                 else:
                     value = 0
                 states.enable_transmit_counter = value
 
         if isChangingBand:
-            logging.warning('Changing band by user!')
+            logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] Changing band by user!')
             logging.warning(f'[DB] [MODE: {latest_mode}] [BAND: {latest_band}] Removing all message!')
             call_coll.delete_many({'band': latest_band, 'mode': latest_mode})
             message_coll.delete_many({'band': latest_band, 'mode': latest_mode})
         
         if isChangingMode:
-            logging.warning('Changing mode by user!')
+            logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] Changing mode by user!')
             logging.warning(f'[DB] [MODE: {latest_mode}] Removing all message!')
             call_coll.delete_many({'mode': latest_mode})
             message_coll.delete_many({'mode': latest_mode})
@@ -520,6 +514,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 states.add_odd_frequency(packet.DeltaFrequency)
         
         logging.info(
+            f'[HOST: {ip_from[0]}:{ip_from[1]}] '
             f'[RX] [MODE: {states_list["mode"]}] [BAND: {states_list["band"]}] '
             f'[FREQUENCY: {packet.DeltaFrequency}] [DB: {packet.SNR}] {packet.Message}'
         )
@@ -528,11 +523,11 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
         data.update(parsing_message(packet.Message))
 
         if 'type' not in data:
-            logging.warning('Cannot parsing the message!')
+            logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] Cannot parsing the message!')
             return
 
         if data['callsign'] in callsign_exc:
-            logging.warning('The Callsign is blacklisted in callsign exception!')
+            logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] The Callsign is blacklisted in callsign exception!')
             return
 
         latest_data = call_coll.find_one_and_delete(
@@ -550,6 +545,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             'mode': states_list['mode']
         }
         completing_data(
+            ip_from,
             data,
             additional_data,
             now,
@@ -577,7 +573,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
             if latest_data and latest_data.get('complete_to', None) == LOCAL_STATES['my_callsign']:
                 if latest_data.get('type', None) != 'R73' or latest_data.get('R73', None) in ['RRR', 'RR73']:
-                    logging.warning('Already CQ-ing even though still talking with me!')
+                    logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] Already CQ-ing even though still talking with me!')
                     logging.info(
                         f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
                         f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
@@ -590,11 +586,11 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 return
 
             if not data['isNewCallsign']:
-                logging.warning('The Callsign is already blacklisted!')
+                logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] The Callsign is already blacklisted!')
                 return
 
             if not filter_cq(data, states):
-                logging.warning('The Callsign is not following criteria!')
+                logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] The Callsign is not following criteria!')
                 return
 
             logging.info(
@@ -634,7 +630,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
                 if latest_data and latest_data.get('complete_to', None) == LOCAL_STATES['my_callsign']:
                     if latest_data.get('type', None) != 'R73' or latest_data.get('R73', None) in ['RRR', 'RR73']:
-                        logging.warning('Sending 73 to other callsign even though still talking with me!')
+                        logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] Sending 73 to other callsign even though still talking with me!')
                         logging.info(
                             f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
                             f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
@@ -647,11 +643,11 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     return
                 
                 if not data['isNewCallsign']:
-                    logging.warning('The Callsign is already blacklisted!')
+                    logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] The Callsign is already blacklisted!')
                     return
 
                 if not filter_cq(data, states):
-                    logging.warning('The Callsign is not following criteria!')
+                    logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] The Callsign is not following criteria!')
                     return
 
                 logging.info(
@@ -694,7 +690,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 if latest_data and latest_data.get('complete_to', None) == LOCAL_STATES['my_callsign']:
 
                     if latest_data.get('type', None) != 'R73' or latest_data.get('R73', None) in ['RRR', 'RR73']:
-                        logging.warning('Re-emerge latest message from this callsign!')
+                        logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] Re-emerge latest message from this callsign!')
                         logging.info(
                             f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
                             f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
@@ -711,11 +707,11 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 else:
 
                     if not data['isNewCallsign']:
-                        logging.warning('The Callsign is already blacklisted!')
+                        logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] The Callsign is already blacklisted!')
                         return
 
                     if not filter_cq(data, states):
-                        logging.warning('The Callsign is not following criteria!')
+                        logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] The Callsign is not following criteria!')
                         return
 
                     logging.info(
@@ -754,7 +750,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 if latest_data and latest_data.get('complete_to', None) == LOCAL_STATES['my_callsign']:
 
                     if latest_data.get('type', None) != 'R73' or latest_data.get('R73', None) in ['RRR', 'RR73']:
-                        logging.warning('Re-emerge latest message from this callsign!')
+                        logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] Re-emerge latest message from this callsign!')
                         logging.info(
                             f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
                             f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
@@ -771,11 +767,11 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 else:
 
                     if not data['isNewCallsign']:
-                        logging.warning('The Callsign is already blacklisted!')
+                        logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] The Callsign is already blacklisted!')
                         return
 
                     if not filter_cq(data, states):
-                        logging.warning('The Callsign is not following criteria!')
+                        logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] The Callsign is not following criteria!')
                         return
 
                     logging.info(
@@ -814,7 +810,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 if latest_data.get('complete_to', None) == LOCAL_STATES['my_callsign']:
 
                     if latest_data.get('type', None) != 'R73' or latest_data.get('R73', None) in ['RRR', 'RR73']:
-                        logging.warning('Re-emerge latest message from this callsign!')
+                        logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] Re-emerge latest message from this callsign!')
                         logging.info(
                             f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
                             f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
@@ -831,11 +827,11 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 else:
 
                     if not data['isNewCallsign']:
-                        logging.warning('The Callsign is already blacklisted!')
+                        logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] The Callsign is already blacklisted!')
                         return
 
                     if not filter_cq(data, states):
-                        logging.warning('The Callsign is not following criteria!')
+                        logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] The Callsign is not following criteria!')
                         return
 
                     logging.info(
@@ -853,15 +849,15 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     )
 
     elif isinstance(packet, wsjtx.WSADIF):
-        logging.info(f'LOGGED ADIF: {packet.ADIF}')
+        logging.info(f'[HOST: {ip_from[0]}:{ip_from[1]}] LOGGED ADIF: {packet.ADIF}')
 
     elif isinstance(packet, wsjtx.WSClose):
-        logging.warning(packet)
+        logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] CLOSED!!!')
         states.closed = True
-        raise KeyboardInterrupt('WSJT-X Closed!')
+        raise WSJTXClosed(f'{ip_from[0]}:{ip_from[1]}')
 
     else:
-        logging.debug(packet)
+        logging.debug(f'[HOST: {ip_from[0]}:{ip_from[1]}] {packet}')
 
 def init(sock: socket.socket, states: States):
 
@@ -903,10 +899,11 @@ def init(sock: socket.socket, states: States):
     else:
         sock.bind((WSJTX_IP, WSJTX_PORT))
     
+    states.receiver_started = True
+    
     logging.info('Done Initializing!')
 
 def main(sock: socket.socket, states_list: typing.Dict[str, States]):
-    global IP_LOCK
 
     ip_from = None
     socks = [sock]
@@ -919,14 +916,29 @@ def main(sock: socket.socket, states_list: typing.Dict[str, States]):
             fds, _, _ = typing.cast(typing.Tuple[typing.List[socket.socket], list, list], t)
             for fdin in fds:
                 _data, ip_from = fdin.recvfrom(1024)
-                if IP_LOCK and (IP_LOCK[0] != ip_from[0] or IP_LOCK[1] != ip_from[1]):
-                    continue
-                process_wsjt(_data, ip_from, states_list[''])
+                namespace = f'{ip_from[0]}:{ip_from[1]}'
+                if namespace not in states_list:
+                    states_list[namespace] = States(
+                        REDIS_HOST,
+                        REDIS_PORT,
+                        MULTICAST,
+                        namespace,
+                        states_list[''].r.connection_pool
+                    )
+                    states_list[namespace].enable_monitoring()
+                    states_list[namespace].change_frequency((MAX_FREQUENCY+MIN_FREQUENCY)//2)
+                    states_list[namespace].use_RR73()
+                process_wsjt(_data, ip_from, states_list[namespace])
         except KeyboardInterrupt:
             call_coll.delete_many({})
             message_coll.delete_many({})
             states_list[''].receiver_started = False
             break
+        except WSJTXClosed as e:
+            states_list.pop(e.args[0])
+            if len(list(states_list.keys())) == 1:
+                states_list[''].closed = True
+                break
         except:
             call_coll.delete_many({})
             message_coll.delete_many({})

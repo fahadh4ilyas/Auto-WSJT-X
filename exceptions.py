@@ -1,0 +1,2 @@
+class WSJTXClosed(Exception):
+    pass
