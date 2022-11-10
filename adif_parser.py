@@ -22,15 +22,15 @@ db = mongo_client.wsjt
 done_coll = db.black
 
 def string_band_to_number(band: str) -> typing.Union[float, int]:
-    if 'mm' in band:
+    if 'mm' in band.lower():
         band = band[:-2]
         band.replace(',','.')
         band = float(band)/1000
-    elif 'cm' in band:
+    elif 'cm' in band.lower():
         band = band[:-2]
         band.replace(',','.')
         band = float(band)/100
-    elif 'm' in band:
+    elif 'm' in band.lower():
         band = band[:-1]
         band = int(band)
     
@@ -62,7 +62,7 @@ def main(data_str: str):
             continue
 
         inserted_data = {
-            'callsign': d['CALL'],
+            'callsign': d['CALL'].replace('_', '/'),
             'mode': d.get('MODE', 'FT8'),
             'confirmed': is_confirmed(d)
         }
@@ -121,7 +121,7 @@ def main(data_str: str):
         if 'DISTANCE' in d:
             inserted_data['distance'] = float(d['DISTANCE'])
         
-        done_coll.update_one({'callsign': inserted_data['callsign'], 'band': inserted_data['band']}, {'$set': inserted_data}, upsert=True)
+        done_coll.update_one({'callsign': inserted_data['callsign'], 'band': inserted_data['band'], 'confirmed': False}, {'$set': inserted_data}, upsert=True)
 
 if __name__ == '__main__':
     print('Starting...')

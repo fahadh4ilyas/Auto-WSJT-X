@@ -23,6 +23,14 @@ if CALLSIGN_EXCEPTION:
     except:
         pass
 
+receiver_exc = []
+if RECEIVER_EXCEPTION:
+    try:
+        with open(RECEIVER_EXCEPTION) as f:
+            receiver_exc = f.read().splitlines()
+    except:
+        pass
+
 with open(DXCC_PRIORITY) as f:
     priority_country_list = f.read().splitlines()
     length_priority_country_list = len(priority_country_list)
@@ -151,7 +159,7 @@ def get_grid_data(
 
 def completing_data(data: dict, additional_data: dict, now: float = None, latest_data: dict = {}) -> dict:
 
-    location_data = get_location_data(data['callsign'], latest_data)
+    location_data = get_location_data(data['prefixed_callsign'], latest_data)
     if location_data:
         data.update({
             k: location_data[k] for k in ['country', 'dxcc', 'continent']
@@ -170,14 +178,14 @@ def completing_data(data: dict, additional_data: dict, now: float = None, latest
     data['isSpam'] = False
     data['isEven'] = (0 <= (data['Time']/1000)%TIMING[data['mode']]['full'] < TIMING[data['mode']]['half'])
     data['skipGrid'] = True
-    data['isNewCallsign'] = latest_data.get('isNewCallsign', not done_coll.find_one(
+    data['isNewCallsign'] = not done_coll.find_one(
         {
             'callsign': data['callsign'],
             'band': data['band'],
             'mode': data['mode'],
             **QSO_FILTER
         }
-    ))
+    )
     data['isNewDXCC'] = latest_data.get('isNewDXCC', not done_coll.find_one(
         {
             'dxcc': data.get('dxcc', 0),
@@ -209,12 +217,12 @@ def get_transmit_data_type(data: dict) -> str:
     global NEXT_TRANSMIT, LOCAL_STATES
 
     return NEXT_TRANSMIT.get(
-        data.get('complete_to', None) == LOCAL_STATES['my_callsign'], 
+        data.get('to', None) == LOCAL_STATES['my_callsign'], 
         {}
     ).get(data['type'], 'SNR' if data.get('skipGrid', True) else 'GRID')
 
 def process_wsjt(_data: bytes, ip_from: tuple, states: States):
-    global callsign_exc, LOCAL_STATES
+    global callsign_exc, receiver_exc, LOCAL_STATES
 
     try:
         packet = wsjtx.ft8_decode(_data)
@@ -234,6 +242,12 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     callsign_exc = f.read().splitlines()
             except:
                 pass
+        if RECEIVER_EXCEPTION:
+            try:
+                with open(RECEIVER_EXCEPTION) as f:
+                    receiver_exc = f.read().splitlines()
+            except:
+                pass
     
     elif isinstance(packet, wsjtx.WSStatus):
 
@@ -248,51 +262,26 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             tx_enabled = packet.TXEnabled,
             decoding = packet.Decoding,
             txdf = packet.TXdf,
+            rxdf = packet.RXdf,
             tx_even = packet.TxEven
         )
 
         states_list = states.get_states(
             'band',
             'mode',
-            'transmitting',
-            'rxdf',
-            'current_rx'
+            'transmitting'
         )
 
         latest_band = states_list['band']
         latest_mode = states_list['mode']
-        latest_rxdf = states_list['rxdf']
         current_band: int = freq_to_band(packet.Frequency//1000)['band']
         current_mode = packet.Mode
-        current_rxdf = packet.RXdf
         isTransmitting = packet.Transmitting and states_list['transmitting'] != packet.Transmitting
         isDoneTransmitting = not packet.Transmitting and states_list['transmitting'] != packet.Transmitting
         isChangingBand = latest_band != 0 and latest_band != current_band
         isChangingMode = latest_mode != '' and latest_mode != current_mode
-        isChangingRXdf = latest_rxdf != 0 and latest_rxdf != current_rxdf
 
-        states.change_states(
-            transmitting = packet.Transmitting,
-            rxdf = current_rxdf
-        )
-
-        if isChangingRXdf and (
-            states_list['current_rx'] != current_rxdf or
-            1.5 < now%TIMING[current_mode]['half'] < TIMING[current_mode]['half'] - 0.1):
-            logging.warning(f'Detecting intervention!')
-            states.transmitter_paused = True
-            states.transmitter_started = False
-
-            packet_last_tx = packet.LastTxMsg or ''
-
-            matched = parsing_message(packet_last_tx)
-
-            if matched:
-                call_coll.delete_one({
-                    'callsign': matched['to'],
-                    'band': current_band,
-                    'mode': current_mode
-                })
+        states.transmitting = packet.Transmitting
 
         if isTransmitting:
             packet_last_tx = packet.LastTxMsg or ''
@@ -308,10 +297,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
             isDifferent = latest_tx != packet_last_tx
 
-            states.change_states(
-                current_callsign = matched.get('current_callsign', ''),
-                last_tx = packet_last_tx
-            )
+            states.last_tx = packet_last_tx
             LOCAL_STATES['current_callsign'] = matched.get('current_callsign', '')
 
             isSameMessage = matched.get('type', None) == matched_latest.get('type', None) and \
@@ -446,7 +432,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     'band': current_band,
                     'mode': current_mode
                 })
-                location_data = get_location_data(current_data['callsign'], current_data)
+                location_data = get_location_data(current_data['prefixed_callsign'], current_data)
                 if 'country' not in current_data  and all([i in location_data for i in ['country', 'dxcc', 'continent']]):
                     current_data.update({
                         k: location_data[k] for k in ['country', 'dxcc', 'continent']
@@ -602,7 +588,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     'grid': data['grid']
                 }}, upsert=True)
 
-            if latest_data and latest_data.get('complete_to', None) == LOCAL_STATES['my_callsign']:
+            if latest_data and latest_data.get('to', None) == LOCAL_STATES['my_callsign']:
                 if latest_data.get('type', None) != 'R73' or latest_data.get('R73', None) in ['RRR', 'RR73']:
                     logging.warning('Already CQ-ing even though still talking with me!')
                     logging.info(
@@ -640,7 +626,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
         elif data['type'] == 'R73':
 
-            if data['complete_to'] == LOCAL_STATES['my_callsign']:
+            if data['to'] == LOCAL_STATES['my_callsign']:
 
                 if data['R73'] == '73':
                     return
@@ -668,7 +654,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
             else:
 
-                if latest_data and latest_data.get('complete_to', None) == LOCAL_STATES['my_callsign']:
+                if latest_data and latest_data.get('to', None) == LOCAL_STATES['my_callsign']:
                     if latest_data.get('type', None) != 'R73' or latest_data.get('R73', None) in ['RRR', 'RR73']:
                         logging.warning('Sending 73 to other callsign even though still talking with me!')
                         logging.info(
@@ -713,7 +699,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 }}, upsert=True
             )
 
-            if data['complete_to'] == LOCAL_STATES['my_callsign']:
+            if data['to'] == LOCAL_STATES['my_callsign']:
 
                 logging.info(
                     f'[DB] [MODE: {data["mode"]}] [BAND: {data["band"]}] '
@@ -736,7 +722,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
             else:
 
-                if latest_data and latest_data.get('complete_to', None) == LOCAL_STATES['my_callsign']:
+                if latest_data and latest_data.get('to', None) == LOCAL_STATES['my_callsign']:
 
                     if latest_data.get('type', None) != 'R73' or latest_data.get('R73', None) in ['RRR', 'RR73']:
                         logging.warning('Re-emerge latest message from this callsign!')
@@ -755,6 +741,13 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 
                 else:
 
+                    if not states_list['num_tries_call_busy']:
+                        return
+                    
+                    if data['to'] in receiver_exc:
+                        logging.warning('The Callsign is calling someone that is blacklisted!')
+                        return
+
                     if not data['isNewCallsign']:
                         logging.warning('The Callsign is already blacklisted!')
                         return
@@ -770,7 +763,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     data['importance'] = 1 + priority_country.get(data['country'], 0)
                     data['tries'] = states_list['num_tries_call_busy']
                     data['tried'] = latest_data.get('tried', False)
-                    data['isSpam'] = latest_data.get('isSpam', False)
+                    if latest_data and get_transmit_data_type(latest_data) == get_transmit_data_type(data):
+                        data['isSpam'] = latest_data.get('isSpam', False)
                     if states_list['aggresive_level'] and data['isNewDXCC']:
                         data['importance'] += 0.5
                         data['tries'] = (states_list['aggresive_level']+1)*states_list['max_tries']
@@ -784,7 +778,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
         elif data['type'] == 'SNR':
 
-            if data['complete_to'] == LOCAL_STATES['my_callsign']:
+            if data['to'] == LOCAL_STATES['my_callsign']:
                 
                 logging.info(
                     f'[DB] [MODE: {data["mode"]}] [BAND: {data["band"]}] '
@@ -807,7 +801,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
             else:
                 
-                if latest_data and latest_data.get('complete_to', None) == LOCAL_STATES['my_callsign']:
+                if latest_data and latest_data.get('to', None) == LOCAL_STATES['my_callsign']:
 
                     if latest_data.get('type', None) != 'R73' or latest_data.get('R73', None) in ['RRR', 'RR73']:
                         logging.warning('Re-emerge latest message from this callsign!')
@@ -826,6 +820,13 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 
                 else:
 
+                    if not states_list['num_tries_call_busy']:
+                        return
+
+                    if data['to'] in receiver_exc:
+                        logging.warning('The Callsign is calling someone that is blacklisted!')
+                        return
+
                     if not data['isNewCallsign']:
                         logging.warning('The Callsign is already blacklisted!')
                         return
@@ -841,7 +842,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     data['importance'] = 1 + priority_country.get(data['country'], 0)
                     data['tries'] = states_list['num_tries_call_busy']
                     data['tried'] = latest_data.get('tried', False)
-                    data['isSpam'] = latest_data.get('isSpam', False)
+                    if latest_data and get_transmit_data_type(latest_data) == get_transmit_data_type(data):
+                        data['isSpam'] = latest_data.get('isSpam', False)
                     if states_list['aggresive_level'] and data['isNewDXCC']:
                         data['importance'] += 0.5
                         data['tries'] = (states_list['aggresive_level']+1)*states_list['max_tries']
@@ -855,7 +857,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
         elif data['type'] == 'RSNR':
 
-            if data['complete_to'] == LOCAL_STATES['my_callsign']:
+            if data['to'] == LOCAL_STATES['my_callsign']:
                 
                 logging.info(
                     f'[DB] [MODE: {data["mode"]}] [BAND: {data["band"]}] '
@@ -878,7 +880,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
             else:
                 
-                if latest_data.get('complete_to', None) == LOCAL_STATES['my_callsign']:
+                if latest_data.get('to', None) == LOCAL_STATES['my_callsign']:
 
                     if latest_data.get('type', None) != 'R73' or latest_data.get('R73', None) in ['RRR', 'RR73']:
                         logging.warning('Re-emerge latest message from this callsign!')
@@ -897,6 +899,13 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 
                 else:
 
+                    if not states_list['num_tries_call_busy']:
+                        return
+
+                    if data['to'] in receiver_exc:
+                        logging.warning('The Callsign is calling someone that is blacklisted!')
+                        return
+
                     if not data['isNewCallsign']:
                         logging.warning('The Callsign is already blacklisted!')
                         return
@@ -912,7 +921,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     data['importance'] = 1 + priority_country.get(data['country'], 0)
                     data['tries'] = states_list['num_tries_call_busy']
                     data['tried'] = latest_data.get('tried', False)
-                    data['isSpam'] = latest_data.get('isSpam', False)
+                    if latest_data and get_transmit_data_type(latest_data) == get_transmit_data_type(data):
+                        data['isSpam'] = latest_data.get('isSpam', False)
                     if states_list['aggresive_level'] and data['isNewDXCC']:
                         data['importance'] += 0.5
                         data['tries'] = (states_list['aggresive_level']+1)*states_list['max_tries']
