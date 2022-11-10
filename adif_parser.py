@@ -62,7 +62,7 @@ def main(data_str: str):
             continue
 
         inserted_data = {
-            'callsign': d['CALL'],
+            'callsign': d['CALL'].replace('_', '/'),
             'mode': d.get('MODE', 'FT8'),
             'confirmed': is_confirmed(d)
         }
