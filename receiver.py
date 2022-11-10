@@ -170,14 +170,14 @@ def completing_data(data: dict, additional_data: dict, now: float = None, latest
     data['isSpam'] = False
     data['isEven'] = (0 <= (data['Time']/1000)%TIMING[data['mode']]['full'] < TIMING[data['mode']]['half'])
     data['skipGrid'] = True
-    data['isNewCallsign'] = latest_data.get('isNewCallsign', not done_coll.find_one(
+    data['isNewCallsign'] = not done_coll.find_one(
         {
             'callsign': data['callsign'],
             'band': data['band'],
             'mode': data['mode'],
             **QSO_FILTER
         }
-    ))
+    )
     data['isNewDXCC'] = latest_data.get('isNewDXCC', not done_coll.find_one(
         {
             'dxcc': data.get('dxcc', 0),
