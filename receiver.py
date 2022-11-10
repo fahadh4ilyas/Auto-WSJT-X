@@ -489,6 +489,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
             if isDifferent:
                 logging.warning(
+                    f'[HOST: {ip_from[0]}:{ip_from[1]}] '
                     f'[TX] [MODE: {current_mode}] [BAND: {current_band}] '
                     f'[FREQUENCY: {states.txdf}] Changing message: {packet_last_tx}'
                 )
