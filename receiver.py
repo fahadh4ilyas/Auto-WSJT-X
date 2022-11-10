@@ -262,51 +262,26 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             tx_enabled = packet.TXEnabled,
             decoding = packet.Decoding,
             txdf = packet.TXdf,
+            rxdf = packet.RXdf,
             tx_even = packet.TxEven
         )
 
         states_list = states.get_states(
             'band',
             'mode',
-            'transmitting',
-            'rxdf',
-            'current_rx'
+            'transmitting'
         )
 
         latest_band = states_list['band']
         latest_mode = states_list['mode']
-        latest_rxdf = states_list['rxdf']
         current_band: int = freq_to_band(packet.Frequency//1000)['band']
         current_mode = packet.Mode
-        current_rxdf = packet.RXdf
         isTransmitting = packet.Transmitting and states_list['transmitting'] != packet.Transmitting
         isDoneTransmitting = not packet.Transmitting and states_list['transmitting'] != packet.Transmitting
         isChangingBand = latest_band != 0 and latest_band != current_band
         isChangingMode = latest_mode != '' and latest_mode != current_mode
-        isChangingRXdf = latest_rxdf != 0 and latest_rxdf != current_rxdf
 
-        states.change_states(
-            transmitting = packet.Transmitting,
-            rxdf = current_rxdf
-        )
-
-        # if isChangingRXdf and (
-        #     states_list['current_rx'] != current_rxdf or
-        #     1.5 < now%TIMING[current_mode]['half'] < TIMING[current_mode]['half'] - 0.1):
-        #     logging.warning(f'Detecting intervention!')
-        #     states.transmitter_paused = True
-        #     states.transmitter_started = False
-
-        #     packet_last_tx = packet.LastTxMsg or ''
-
-        #     matched = parsing_message(packet_last_tx)
-
-        #     if matched:
-        #         call_coll.delete_one({
-        #             'callsign': matched['to'],
-        #             'band': current_band,
-        #             'mode': current_mode
-        #         })
+        states.transmitting = packet.Transmitting
 
         if isTransmitting:
             packet_last_tx = packet.LastTxMsg or ''
@@ -322,10 +297,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
             isDifferent = latest_tx != packet_last_tx
 
-            states.change_states(
-                current_callsign = matched.get('current_callsign', ''),
-                last_tx = packet_last_tx
-            )
+            states.last_tx = packet_last_tx
             LOCAL_STATES['current_callsign'] = matched.get('current_callsign', '')
 
             isSameMessage = matched.get('type', None) == matched_latest.get('type', None) and \
