@@ -257,7 +257,6 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
         states.change_states(
             my_callsign = packet.DeCall or '',
             my_grid = packet.DeGrid or '',
-            dx_callsign = packet.DXCall or '',
             dx_grid = packet.DXGrid or '',
             tx_enabled = packet.TXEnabled,
             decoding = packet.Decoding,
@@ -269,19 +268,40 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
         states_list = states.get_states(
             'band',
             'mode',
-            'transmitting'
+            'transmitting',
+            'dx_callsign',
+            'current_callsign',
         )
 
         latest_band = states_list['band']
         latest_mode = states_list['mode']
+        latest_dx = states_list['dx_callsign']
         current_band: int = freq_to_band(packet.Frequency//1000)['band']
         current_mode = packet.Mode
+        current_dx = packet.DXCall or ''
         isTransmitting = packet.Transmitting and states_list['transmitting'] != packet.Transmitting
         isDoneTransmitting = not packet.Transmitting and states_list['transmitting'] != packet.Transmitting
         isChangingBand = latest_band != 0 and latest_band != current_band
         isChangingMode = latest_mode != '' and latest_mode != current_mode
+        isChangingDX = latest_dx != current_dx
 
-        states.transmitting = packet.Transmitting
+        states.change_states(
+            transmitting = packet.Transmitting,
+            dx_callsign = current_dx
+        )
+
+        if isChangingDX and current_dx != states_list['current_callsign']:
+            logging.warning(f'Detecting intervention!')
+            states.transmitter_paused = True
+            states.transmitter_started = False
+
+            if states_list['current_callsign']:
+                call_coll.delete_one({
+                    'callsign': states_list['current_callsign'],
+                    'band': current_band,
+                    'mode': current_mode
+                })
+                states.current_callsign = ''
 
         if isTransmitting:
             packet_last_tx = packet.LastTxMsg or ''

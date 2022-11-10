@@ -47,6 +47,7 @@ class States(object):
             'last_tx': str,
             'tx_even': bool,
             'transmitter_started': bool,
+            'transmitter_paused': bool,
             'receiver_started': bool,
             'transmit_phase': bool,
             'current_callsign': str,
@@ -205,6 +206,14 @@ class States(object):
     @transmitter_started.setter
     def transmitter_started(self, val: bool):
         self.r.set('transmitter_started', 1 if val else '')
+
+    @property
+    def transmitter_paused(self) -> bool:
+        return not not self.r.get('transmitter_paused')
+    
+    @transmitter_paused.setter
+    def transmitter_paused(self, val: bool):
+        self.r.set('transmitter_paused', 1 if val else '')
     
     @property
     def receiver_started(self) -> bool:
