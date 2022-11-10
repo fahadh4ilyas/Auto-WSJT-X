@@ -94,8 +94,7 @@ def filter_cq(data: dict, states: States) -> bool:
         {
             'grid': data['grid'],
             'band': data['band'],
-            'mode': data['mode'],
-            **QSO_FILTER
+            'mode': data['mode']
         }
     ):
         return True
@@ -182,16 +181,14 @@ def completing_data(data: dict, additional_data: dict, now: float = None, latest
         {
             'callsign': data['callsign'],
             'band': data['band'],
-            'mode': data['mode'],
-            **QSO_FILTER
+            'mode': data['mode']
         }
     )
     data['isNewDXCC'] = latest_data.get('isNewDXCC', not done_coll.find_one(
         {
             'dxcc': data.get('dxcc', 0),
             'band': data['band'],
-            'mode': data['mode'],
-            **QSO_FILTER
+            'mode': data['mode']
         }
     ))
     data['timestamp'] = now or datetime.now().timestamp()
@@ -446,6 +443,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     current_data['callsign'] = matched['to']
                 current_data.update({
                     'confirmed': True,
+                    'fromScript': True,
                     'timestamp': now,
                     'callsign': matched['to'],
                     'band': current_band,
@@ -931,6 +929,9 @@ def init(sock: socket.socket, states: States):
 
     if QRZ_API_KEY:
         logging.info('Checking QRZ Logbook...')
+        if WORK_ON_UNCONFIRMED_QSO:
+            logging.info('Removing unconfirmed log from blacklist...')
+            done_coll.delete_many({'$or': [{'confirmed': False}, {'fromScript': True}]})
         if NUM_DAYS_LOG:
             now = datetime.now()
             previous = now - timedelta(days=NUM_DAYS_LOG)
