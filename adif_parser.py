@@ -45,7 +45,7 @@ def is_confirmed(data: dict) -> bool:
     
     return False
 
-def main(data_str: str, updating: bool = False):
+def main(data_str: str):
 
     t = adif_io.read_from_string(data_str)
 
@@ -121,10 +121,7 @@ def main(data_str: str, updating: bool = False):
         if 'DISTANCE' in d:
             inserted_data['distance'] = float(d['DISTANCE'])
         
-        if updating:
-            done_coll.update_one({'callsign': inserted_data['callsign'], 'band': inserted_data['band'], 'confirmed': False}, {'$set': inserted_data}, upsert=True)
-        else:
-            done_coll.insert_one(inserted_data)
+        done_coll.update_one({'callsign': inserted_data['callsign'], 'band': inserted_data['band'], 'confirmed': False}, {'$set': inserted_data}, upsert=True)
 
 if __name__ == '__main__':
     print('Starting...')
