@@ -61,7 +61,7 @@ def transmitting(now: float, states: States):
     STATES_LIST_LOCAL = states.get_states(
         'band',
         'mode',
-        'tries',
+        'transmit_counter',
         'max_tries_change_freq'
     )
     
@@ -105,7 +105,7 @@ def transmitting(now: float, states: States):
         states,
         CURRENT_DATA,
         IS_EVEN,
-        STATES_LIST_LOCAL['tries']%STATES_LIST_LOCAL['max_tries_change_freq'] == 0
+        STATES_LIST_LOCAL['transmit_counter']%STATES_LIST_LOCAL['max_tries_change_freq'] == 0
     )
     time.sleep(TIMING[CURRENT_DATA['mode']]['half']/2)
 
