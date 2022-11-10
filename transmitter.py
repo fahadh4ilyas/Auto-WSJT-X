@@ -132,8 +132,7 @@ def transmitting(now: float, states: States):
             states,
             CURRENT_DATA,
             IS_EVEN,
-            STATES_LIST_LOCAL['transmit_counter']%STATES_LIST_LOCAL['max_tries_change_freq'] == 0,
-            False
+            STATES_LIST_LOCAL['transmit_counter']%STATES_LIST_LOCAL['max_tries_change_freq'] == 0
         )
     else:
         replying(
