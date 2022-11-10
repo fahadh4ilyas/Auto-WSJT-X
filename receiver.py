@@ -23,6 +23,14 @@ if CALLSIGN_EXCEPTION:
     except:
         pass
 
+receiver_exc = []
+if RECEIVER_EXCEPTION:
+    try:
+        with open(RECEIVER_EXCEPTION) as f:
+            receiver_exc = f.read().splitlines()
+    except:
+        pass
+
 with open(DXCC_PRIORITY) as f:
     priority_country_list = f.read().splitlines()
     length_priority_country_list = len(priority_country_list)
@@ -214,7 +222,7 @@ def get_transmit_data_type(data: dict) -> str:
     ).get(data['type'], 'SNR' if data.get('skipGrid', True) else 'GRID')
 
 def process_wsjt(_data: bytes, ip_from: tuple, states: States):
-    global callsign_exc, LOCAL_STATES
+    global callsign_exc, receiver_exc, LOCAL_STATES
 
     try:
         packet = wsjtx.ft8_decode(_data)
@@ -232,6 +240,12 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             try:
                 with open(CALLSIGN_EXCEPTION) as f:
                     callsign_exc = f.read().splitlines()
+            except:
+                pass
+        if RECEIVER_EXCEPTION:
+            try:
+                with open(RECEIVER_EXCEPTION) as f:
+                    receiver_exc = f.read().splitlines()
             except:
                 pass
     
@@ -738,6 +752,9 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 
                 else:
 
+                    if not states_list['num_tries_call_busy']:
+                        return
+
                     if not data['isNewCallsign']:
                         logging.warning('The Callsign is already blacklisted!')
                         return
@@ -799,6 +816,9 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 
                 else:
 
+                    if not states_list['num_tries_call_busy']:
+                        return
+
                     if not data['isNewCallsign']:
                         logging.warning('The Callsign is already blacklisted!')
                         return
@@ -859,6 +879,9 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                         )
                 
                 else:
+
+                    if not states_list['num_tries_call_busy']:
+                        return
 
                     if not data['isNewCallsign']:
                         logging.warning('The Callsign is already blacklisted!')

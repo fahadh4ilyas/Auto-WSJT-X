@@ -54,7 +54,7 @@ NUM_INACTIVE_BEFORE_CUT = 0
 MAX_TRIES = 3
 
 # Number of tries calling busy callsign
-# Minimum must be set to 1
+# Minimum must be set to 0
 # Maximum is 2 * MAX_TRIES - 1
 # restart receiver + transmitter
 NUM_TRIES_CALL_BUSY = 2
@@ -107,6 +107,11 @@ SORTBY = [
 # Only used for adif_parser.py
 LOG_LOCATION = os.path.join(CURRENT_DIR, 'data', 'log.adi')
 
+# List of receiver callsign that user want to be blacklisted
+# if that callsign is being called by callsign that we wanted
+# Restarting receiver + transmitter is not required (but recommended)
+RECEIVER_EXCEPTION = os.path.join(CURRENT_DIR, 'data', 'Receiver_Exception.txt')
+
 # List of callsign that user want to be blacklisted
 # Restarting receiver + transmitter is not required (but recommended)
 CALLSIGN_EXCEPTION = os.path.join(CURRENT_DIR, 'data', 'Callsign_Exception.txt')
@@ -135,8 +140,8 @@ TIMING = {
 if NUM_INACTIVE_BEFORE_CUT >= MAX_TRIES:
     raise ValueError('MIN_INACTIVE_BEFORE_CUT MUST BE LESS THAN MAX_TRIES')
 
-if not (0 < NUM_TRIES_CALL_BUSY < 2*MAX_TRIES):
-    raise ValueError('NUM_TRIES_CALL_BUSY must be more than 0 and less than 2 * MAX_TRIES')
+if not (0 <= NUM_TRIES_CALL_BUSY < 2*MAX_TRIES):
+    raise ValueError('NUM_TRIES_CALL_BUSY must be less than 2 * MAX_TRIES')
 
 QSO_FILTER = {}
 if WORK_ON_UNCONFIRMED_QSO:
