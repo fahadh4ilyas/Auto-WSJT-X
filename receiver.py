@@ -174,6 +174,7 @@ def completing_data(data: dict, additional_data: dict, now: float = None, latest
 
     data['expired'] = False
     data['tried'] = False
+    data['isReemerging'] = False
     data['isSpam'] = False
     data['isEven'] = (0 <= (data['Time']/1000)%TIMING[data['mode']]['full'] < TIMING[data['mode']]['half'])
     data['skipGrid'] = True
@@ -575,6 +576,10 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             upsert=True
         )
 
+        if 'country' not in data:
+            logging.warning('The Callsign\'s country is not found')
+            return
+
         if states_list['num_inactive_before_cut'] and data['callsign'] == LOCAL_STATES['current_callsign']:
             states.inactive_count = 0
 
@@ -587,18 +592,24 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 }}, upsert=True)
 
             if latest_data and latest_data.get('to', None) == LOCAL_STATES['my_callsign']:
-                if latest_data.get('type', None) != 'R73' or latest_data.get('R73', None) in ['RRR', 'RR73']:
+                if latest_data.get('R73', None) != '73':
                     logging.warning('Already CQ-ing even though still talking with me!')
-                    logging.info(
-                        f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
-                        f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
-                    )
-                    call_coll.update_one(
-                        {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
-                        {'$set': latest_data},
-                        upsert=True
-                    )
-                return
+                    if not (latest_data['tried'] and latest_data['isReemerging']):
+                        if latest_data['tried']:
+                            latest_data['expired'] = False
+                            latest_data['tried'] = False
+                            latest_data['timestamp'] = data['timestamp']
+                            latest_data['isReemerging'] = True
+                        logging.info(
+                            f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
+                            f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
+                        )
+                        call_coll.update_one(
+                            {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
+                            {'$set': latest_data},
+                            upsert=True
+                        )
+                        return
 
             if not data['isNewCallsign']:
                 logging.warning('The Callsign is already blacklisted!')
@@ -653,18 +664,24 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             else:
 
                 if latest_data and latest_data.get('to', None) == LOCAL_STATES['my_callsign']:
-                    if latest_data.get('type', None) != 'R73' or latest_data.get('R73', None) in ['RRR', 'RR73']:
+                    if latest_data.get('R73', None) != '73':
                         logging.warning('Sending 73 to other callsign even though still talking with me!')
-                        logging.info(
-                            f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
-                            f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
-                        )
-                        call_coll.update_one(
-                            {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
-                            {'$set': latest_data},
-                            upsert=True
-                        )
-                    return
+                        if not (latest_data['tried'] and latest_data['isReemerging']):
+                            if latest_data['tried']:
+                                latest_data['expired'] = False
+                                latest_data['tried'] = False
+                                latest_data['timestamp'] = data['timestamp']
+                                latest_data['isReemerging'] = True
+                            logging.info(
+                                f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
+                                f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
+                            )
+                            call_coll.update_one(
+                                {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
+                                {'$set': latest_data},
+                                upsert=True
+                            )
+                            return
                 
                 if not data['isNewCallsign']:
                     logging.warning('The Callsign is already blacklisted!')
@@ -721,58 +738,59 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             else:
 
                 if latest_data and latest_data.get('to', None) == LOCAL_STATES['my_callsign']:
+                    if latest_data.get('R73', None) != '73':
+                        logging.warning('Sending Grid to other callsign even though still talking with me!')
+                        if not (latest_data['tried'] and latest_data['isReemerging']):
+                            if latest_data['tried']:
+                                latest_data['expired'] = False
+                                latest_data['tried'] = False
+                                latest_data['timestamp'] = data['timestamp']
+                                latest_data['isReemerging'] = True
+                            logging.info(
+                                f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
+                                f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
+                            )
+                            call_coll.update_one(
+                                {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
+                                {'$set': latest_data},
+                                upsert=True
+                            )
+                            return
 
-                    if latest_data.get('type', None) != 'R73' or latest_data.get('R73', None) in ['RRR', 'RR73']:
-                        logging.warning('Re-emerge latest message from this callsign!')
-                        logging.info(
-                            f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
-                            f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
-                        )
-                        latest_data['expired'] = False
-                        latest_data['tried'] = False
-                        latest_data['timestamp'] = data['timestamp']
-                        call_coll.update_one(
-                            {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
-                            {'$set': latest_data},
-                            upsert=True
-                        )
+                if not states_list['num_tries_call_busy']:
+                    return
                 
-                else:
+                if data['to'] in receiver_exc:
+                    logging.warning('The Callsign is calling someone that is blacklisted!')
+                    return
 
-                    if not states_list['num_tries_call_busy']:
-                        return
-                    
-                    if data['to'] in receiver_exc:
-                        logging.warning('The Callsign is calling someone that is blacklisted!')
-                        return
+                if not data['isNewCallsign']:
+                    logging.warning('The Callsign is already blacklisted!')
+                    return
 
-                    if not data['isNewCallsign']:
-                        logging.warning('The Callsign is already blacklisted!')
-                        return
+                if not filter_cq(data, states):
+                    logging.warning('The Callsign is not following criteria!')
+                    return
 
-                    if not filter_cq(data, states):
-                        logging.warning('The Callsign is not following criteria!')
-                        return
-
-                    logging.info(
-                        f'[DB] [MODE: {data["mode"]}] [BAND: {data["band"]}] '
-                        f'[CALLSIGN: {data["callsign"]}] Adding {data["Message"]}'
-                    )
-                    data['importance'] = 1 + priority_country.get(data['country'], 0)
-                    data['tries'] = states_list['num_tries_call_busy']
-                    data['tried'] = latest_data.get('tried', False)
-                    if latest_data and get_transmit_data_type(latest_data) == get_transmit_data_type(data):
-                        data['isSpam'] = latest_data.get('isSpam', False)
+                logging.info(
+                    f'[DB] [MODE: {data["mode"]}] [BAND: {data["band"]}] '
+                    f'[CALLSIGN: {data["callsign"]}] Adding {data["Message"]}'
+                )
+                data['importance'] = 1 + priority_country.get(data['country'], 0)
+                data['tries'] = states_list['num_tries_call_busy']
+                data['tried'] = latest_data.get('tried', False)
+                if latest_data and get_transmit_data_type(latest_data) == get_transmit_data_type(data):
+                    data['isSpam'] = latest_data.get('isSpam', False)
                     if states_list['aggresive_level'] and data['isNewDXCC']:
                         data['importance'] += 0.5
                         data['tries'] = (states_list['aggresive_level']+1)*states_list['max_tries']
                         data['tried'] = False
                         data['isSpam'] = False
-                    call_coll.update_one(
-                        {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
-                        {'$set': data},
-                        upsert=True
-                    )
+                call_coll.update_one(
+                    {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
+                    {'$set': data},
+                    upsert=True
+                )
 
         elif data['type'] == 'SNR':
 
@@ -800,58 +818,59 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             else:
                 
                 if latest_data and latest_data.get('to', None) == LOCAL_STATES['my_callsign']:
+                    if latest_data.get('R73', None) != '73':
+                        logging.warning('Sending signal to other callsign even though still talking with me!')
+                        if not (latest_data['tried'] and latest_data['isReemerging']):
+                            if latest_data['tried']:
+                                latest_data['expired'] = False
+                                latest_data['tried'] = False
+                                latest_data['timestamp'] = data['timestamp']
+                                latest_data['isReemerging'] = True
+                            logging.info(
+                                f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
+                                f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
+                            )
+                            call_coll.update_one(
+                                {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
+                                {'$set': latest_data},
+                                upsert=True
+                            )
+                            return
 
-                    if latest_data.get('type', None) != 'R73' or latest_data.get('R73', None) in ['RRR', 'RR73']:
-                        logging.warning('Re-emerge latest message from this callsign!')
-                        logging.info(
-                            f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
-                            f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
-                        )
-                        latest_data['expired'] = False
-                        latest_data['tried'] = False
-                        latest_data['timestamp'] = data['timestamp']
-                        call_coll.update_one(
-                            {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
-                            {'$set': latest_data},
-                            upsert=True
-                        )
-                
-                else:
+                if not states_list['num_tries_call_busy']:
+                    return
 
-                    if not states_list['num_tries_call_busy']:
-                        return
+                if data['to'] in receiver_exc:
+                    logging.warning('The Callsign is calling someone that is blacklisted!')
+                    return
 
-                    if data['to'] in receiver_exc:
-                        logging.warning('The Callsign is calling someone that is blacklisted!')
-                        return
+                if not data['isNewCallsign']:
+                    logging.warning('The Callsign is already blacklisted!')
+                    return
 
-                    if not data['isNewCallsign']:
-                        logging.warning('The Callsign is already blacklisted!')
-                        return
+                if not filter_cq(data, states):
+                    logging.warning('The Callsign is not following criteria!')
+                    return
 
-                    if not filter_cq(data, states):
-                        logging.warning('The Callsign is not following criteria!')
-                        return
-
-                    logging.info(
-                        f'[DB] [MODE: {data["mode"]}] [BAND: {data["band"]}] '
-                        f'[CALLSIGN: {data["callsign"]}] Adding {data["Message"]}'
-                    )
-                    data['importance'] = 1 + priority_country.get(data['country'], 0)
-                    data['tries'] = states_list['num_tries_call_busy']
-                    data['tried'] = latest_data.get('tried', False)
-                    if latest_data and get_transmit_data_type(latest_data) == get_transmit_data_type(data):
-                        data['isSpam'] = latest_data.get('isSpam', False)
+                logging.info(
+                    f'[DB] [MODE: {data["mode"]}] [BAND: {data["band"]}] '
+                    f'[CALLSIGN: {data["callsign"]}] Adding {data["Message"]}'
+                )
+                data['importance'] = 1 + priority_country.get(data['country'], 0)
+                data['tries'] = states_list['num_tries_call_busy']
+                data['tried'] = latest_data.get('tried', False)
+                if latest_data and get_transmit_data_type(latest_data) == get_transmit_data_type(data):
+                    data['isSpam'] = latest_data.get('isSpam', False)
                     if states_list['aggresive_level'] and data['isNewDXCC']:
                         data['importance'] += 0.5
                         data['tries'] = (states_list['aggresive_level']+1)*states_list['max_tries']
                         data['tried'] = False
                         data['isSpam'] = False
-                    call_coll.update_one(
-                        {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
-                        {'$set': data},
-                        upsert=True
-                    )
+                call_coll.update_one(
+                    {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
+                    {'$set': data},
+                    upsert=True
+                )
 
         elif data['type'] == 'RSNR':
 
@@ -879,58 +898,59 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             else:
                 
                 if latest_data.get('to', None) == LOCAL_STATES['my_callsign']:
+                    if latest_data.get('R73', None) != '73':
+                        logging.warning('Replying signal to other callsign even though still talking with me!')
+                        if not (latest_data['tried'] and latest_data['isReemerging']):
+                            if latest_data['tried']:
+                                latest_data['expired'] = False
+                                latest_data['tried'] = False
+                                latest_data['timestamp'] = data['timestamp']
+                                latest_data['isReemerging'] = True
+                            logging.info(
+                                f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
+                                f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
+                            )
+                            call_coll.update_one(
+                                {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
+                                {'$set': latest_data},
+                                upsert=True
+                            )
+                            return
 
-                    if latest_data.get('type', None) != 'R73' or latest_data.get('R73', None) in ['RRR', 'RR73']:
-                        logging.warning('Re-emerge latest message from this callsign!')
-                        logging.info(
-                            f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
-                            f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
-                        )
-                        latest_data['expired'] = False
-                        latest_data['tried'] = False
-                        latest_data['timestamp'] = data['timestamp']
-                        call_coll.update_one(
-                            {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
-                            {'$set': latest_data},
-                            upsert=True
-                        )
-                
-                else:
+                if not states_list['num_tries_call_busy']:
+                    return
 
-                    if not states_list['num_tries_call_busy']:
-                        return
+                if data['to'] in receiver_exc:
+                    logging.warning('The Callsign is calling someone that is blacklisted!')
+                    return
 
-                    if data['to'] in receiver_exc:
-                        logging.warning('The Callsign is calling someone that is blacklisted!')
-                        return
+                if not data['isNewCallsign']:
+                    logging.warning('The Callsign is already blacklisted!')
+                    return
 
-                    if not data['isNewCallsign']:
-                        logging.warning('The Callsign is already blacklisted!')
-                        return
+                if not filter_cq(data, states):
+                    logging.warning('The Callsign is not following criteria!')
+                    return
 
-                    if not filter_cq(data, states):
-                        logging.warning('The Callsign is not following criteria!')
-                        return
-
-                    logging.info(
-                        f'[DB] [MODE: {data["mode"]}] [BAND: {data["band"]}] '
-                        f'[CALLSIGN: {data["callsign"]}] Adding {data["Message"]}'
-                    )
-                    data['importance'] = 1 + priority_country.get(data['country'], 0)
-                    data['tries'] = states_list['num_tries_call_busy']
-                    data['tried'] = latest_data.get('tried', False)
-                    if latest_data and get_transmit_data_type(latest_data) == get_transmit_data_type(data):
-                        data['isSpam'] = latest_data.get('isSpam', False)
+                logging.info(
+                    f'[DB] [MODE: {data["mode"]}] [BAND: {data["band"]}] '
+                    f'[CALLSIGN: {data["callsign"]}] Adding {data["Message"]}'
+                )
+                data['importance'] = 1 + priority_country.get(data['country'], 0)
+                data['tries'] = states_list['num_tries_call_busy']
+                data['tried'] = latest_data.get('tried', False)
+                if latest_data and get_transmit_data_type(latest_data) == get_transmit_data_type(data):
+                    data['isSpam'] = latest_data.get('isSpam', False)
                     if states_list['aggresive_level'] and data['isNewDXCC']:
                         data['importance'] += 0.5
                         data['tries'] = (states_list['aggresive_level']+1)*states_list['max_tries']
                         data['tried'] = False
                         data['isSpam'] = False
-                    call_coll.update_one(
-                        {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
-                        {'$set': data},
-                        upsert=True
-                    )
+                call_coll.update_one(
+                    {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
+                    {'$set': data},
+                    upsert=True
+                )
 
     elif isinstance(packet, wsjtx.WSADIF):
         logging.info(f'LOGGED ADIF: {packet.ADIF}')
