@@ -124,7 +124,7 @@ def main(data_str: str, updating: bool = False):
         if updating:
             done_coll.update_one({'callsign': inserted_data['callsign'], 'band': inserted_data['band']}, {'$set': inserted_data}, upsert=True)
         else:
-            done_coll.insert_one({'callsign': inserted_data['callsign'], 'band': inserted_data['band']}, {inserted_data})
+            done_coll.insert_one({'callsign': inserted_data['callsign'], 'band': inserted_data['band']}, inserted_data)
 
 if __name__ == '__main__':
     print('Starting...')
