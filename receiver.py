@@ -485,16 +485,24 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             latest_tx = states.last_tx
             matched_latest = parsing_message(latest_tx)
 
-            isDifferent = latest_tx != packet_last_tx
+            isSameMessage = matched.get('type', None) == matched_latest.get('type', None) and \
+                matched.get('to', None) == matched_latest.get('to', None)
 
-            if isDifferent:
+            if not isSameMessage:
                 logging.warning(
                     f'[HOST: {ip_from[0]}:{ip_from[1]}] '
                     f'[TX] [MODE: {current_mode}] [BAND: {current_band}] '
                     f'[FREQUENCY: {states.txdf}] Changing message: {packet_last_tx}'
                 )
+                if states.transmitter_started:
+                    states.change_states(
+                        tries = 1,
+                        inactive_count = 1,
+                        transmit_counter = 1
+                    )
 
-            if isDifferent and matched.get('type', None) == 'R73':
+
+            if not isSameMessage and matched.get('type', None) == 'R73':
                 qso_data = done_coll.find_one(
                     {'callsign': matched['to'], 'band': current_band, 'mode': current_mode}
                 ) or {}
