@@ -754,6 +754,10 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
                     if not states_list['num_tries_call_busy']:
                         return
+                    
+                    if data['complete_to'] in receiver_exc:
+                        logging.warning('The Callsign is calling someone that is blacklisted!')
+                        return
 
                     if not data['isNewCallsign']:
                         logging.warning('The Callsign is already blacklisted!')
@@ -819,6 +823,10 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     if not states_list['num_tries_call_busy']:
                         return
 
+                    if data['complete_to'] in receiver_exc:
+                        logging.warning('The Callsign is calling someone that is blacklisted!')
+                        return
+
                     if not data['isNewCallsign']:
                         logging.warning('The Callsign is already blacklisted!')
                         return
@@ -881,6 +889,10 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 else:
 
                     if not states_list['num_tries_call_busy']:
+                        return
+
+                    if data['complete_to'] in receiver_exc:
+                        logging.warning('The Callsign is calling someone that is blacklisted!')
                         return
 
                     if not data['isNewCallsign']:
