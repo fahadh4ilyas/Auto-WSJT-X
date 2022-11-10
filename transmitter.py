@@ -87,6 +87,7 @@ def transmitting(now: float, states: States):
         'band',
         'mode',
         'transmit_counter',
+        'max_tries_change_freq',
         'current_callsign'
     )
     
@@ -125,14 +126,23 @@ def transmitting(now: float, states: States):
         return
     
     IS_EVEN = message_time
-        
-    replying(
-        states,
-        CURRENT_DATA,
-        IS_EVEN,
-        STATES_LIST_LOCAL['transmit_counter'] > 0,
-        STATES_LIST_LOCAL['current_callsign'] != CURRENT_DATA['callsign']
-    )
+    
+    if STATES_LIST_LOCAL['max_tries_change_freq']:
+        replying(
+            states,
+            CURRENT_DATA,
+            IS_EVEN,
+            STATES_LIST_LOCAL['transmit_counter']%STATES_LIST_LOCAL['max_tries_change_freq'] == 0,
+            False
+        )
+    else:
+        replying(
+            states,
+            CURRENT_DATA,
+            IS_EVEN,
+            STATES_LIST_LOCAL['transmit_counter'] > 0,
+            STATES_LIST_LOCAL['current_callsign'] != CURRENT_DATA['callsign']
+        )
     time.sleep(TIMING[CURRENT_DATA['mode']]['half']/2)
 
 def init(states: States):
@@ -140,6 +150,7 @@ def init(states: States):
     states.transmitter_started = True
     states.sort_by = SORTBY
     states.initial_frequency = INITIAL_FREQUENCY
+    states.max_tries_change_freq = MAX_TRIES_CHANGE_FREQUENCY
     logging.info('Done Initializing!')
 
 def main(states_list: typing.Dict[str, States]):

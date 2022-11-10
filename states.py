@@ -58,6 +58,7 @@ class States(object):
             'num_tries_call_busy': int,
             'num_disable_transmit': int,
             'max_tries': int,
+            'max_tries_change_freq': int,
             'min_db': int,
             'initial_frequency': int,
             'new_grid': bool,
@@ -320,6 +321,14 @@ class States(object):
     @max_tries.setter
     def max_tries(self, val: int):
         self.r.set('max_tries', val)
+
+    @property
+    def max_tries_change_freq(self) -> int:
+        return int(self.r.get('max_tries_change_freq') or 0)
+    
+    @max_tries_change_freq.setter
+    def max_tries_change_freq(self, val: int):
+        self.r.set('max_tries_change_freq', val)
 
     @property
     def sort_by(self) -> list:

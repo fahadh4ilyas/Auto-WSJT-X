@@ -92,6 +92,13 @@ DXCC_EXCEPTION = [
 # restart receiver + transmitter
 DXCC_PRIORITY = os.path.join(CURRENT_DIR, 'data', 'priority_list.txt')
 
+# Will change frequency every this number of time
+# Set to 0 will deactivate it and using INITIAL_FREQUENCY
+# Set to 1 will always to change frequency every transmit
+# restart transmitter
+MAX_TRIES_CHANGE_FREQUENCY = 2
+
+
 # Initial frequency to transmit message
 # Must be between MIN_FREQUENCY and MAX_FREQUENCY
 # restart transmitter
