@@ -145,8 +145,4 @@ if not (0 <= NUM_TRIES_CALL_BUSY < 2*MAX_TRIES):
 
 if not (MIN_FREQUENCY <= INITIAL_FREQUENCY <= MAX_FREQUENCY):
     raise ValueError('INITIAL_FREQUENCY not in between MIN_FREQUENCY and MAX_FREQUENCY')
-
-QSO_FILTER = {}
-if WORK_ON_UNCONFIRMED_QSO:
-    QSO_FILTER = {'confirmed': True}
 # #########################################################################
