@@ -4,7 +4,7 @@ from pyhamtools.frequency import freq_to_band
 from tqdm import tqdm
 
 from pymongo import MongoClient
-from config import LOG_LOCATION, MONGO_HOST, MONGO_PORT, QRZ_API_KEY, QRZ_PASSWORD, QRZ_USERNAME
+from config import LOG_LOCATION, MONGO_HOST, MONGO_PORT, QRZ_API_KEY, QRZ_PASSWORD, QRZ_USERNAME, WORK_ON_UNCONFIRMED_QSO
 
 call_info2 = None
 if QRZ_USERNAME:
@@ -61,10 +61,14 @@ def main(data_str: str):
         if d.get('MODE', None) not in ['FT8', 'FT4']:
             continue
 
+        confirmed = is_confirmed(d)
+        if WORK_ON_UNCONFIRMED_QSO and not confirmed:
+            continue
+
         inserted_data = {
             'callsign': d['CALL'].replace('_', '/'),
             'mode': d.get('MODE', 'FT8'),
-            'confirmed': is_confirmed(d)
+            'confirmed': confirmed
         }
 
         try:

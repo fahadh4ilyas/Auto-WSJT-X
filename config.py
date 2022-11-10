@@ -142,8 +142,4 @@ if NUM_INACTIVE_BEFORE_CUT >= MAX_TRIES:
 
 if not (0 <= NUM_TRIES_CALL_BUSY < 2*MAX_TRIES):
     raise ValueError('NUM_TRIES_CALL_BUSY must be less than 2 * MAX_TRIES')
-
-QSO_FILTER = {}
-if WORK_ON_UNCONFIRMED_QSO:
-    QSO_FILTER = {'confirmed': True}
 # #########################################################################
