@@ -957,7 +957,7 @@ def init(sock: socket.socket, states: States):
             result_str = res.text.replace('&lt;','<').replace('&gt;','>').replace('\n', ' ')
             result_adif = re.search(r'ADIF=(.*<eor>)', result_str)
             if result_adif:
-                adif_parser(result_adif.group(1))
+                adif_parser(result_adif.group(1), updating=True)
     
     if MULTICAST:
         sock.bind(('', WSJTX_PORT))
