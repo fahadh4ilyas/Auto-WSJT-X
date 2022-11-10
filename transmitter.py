@@ -101,7 +101,12 @@ def transmitting(now: float, states: States):
     
     IS_EVEN = message_time
         
-    replying(states, CURRENT_DATA, IS_EVEN, STATES_LIST_LOCAL['tries']%STATES_LIST_LOCAL['max_tries_change_freq'] == 0)
+    replying(
+        states,
+        CURRENT_DATA,
+        IS_EVEN,
+        STATES_LIST_LOCAL['tries']%STATES_LIST_LOCAL['max_tries_change_freq'] == 0
+    )
     time.sleep(TIMING[CURRENT_DATA['mode']]['half']/2)
 
 def init(states: States):
