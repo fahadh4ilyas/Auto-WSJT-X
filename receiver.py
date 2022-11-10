@@ -87,8 +87,8 @@ def filter_cq(data: dict, states: States) -> bool:
     if data.get('extra', None):
         if data['extra'] == 'DX' and data.get('country', '') == 'Indonesia':
             return False
-        if data['extra'] in ['OC', 'AS']:
-            return True
+        if data['extra'] not in ['OC', 'AS']:
+            return False
         
     if 'grid' in data and states.new_grid and not done_coll.find_one(
         {
