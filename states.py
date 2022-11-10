@@ -21,7 +21,7 @@ class States(object):
     
     def __init__(self, redis_host: str = '127.0.0.1', redis_port: int = 6379, multicast: bool = False):
         
-        self.r = redis.Redis(host=redis_host, port=redis_port, db=0)
+        self.r = redis.Redis(host=redis_host, port=redis_port, db=0, decode_responses=True)
 
         if multicast:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
@@ -68,7 +68,7 @@ class States(object):
     # ==========================================================
     @property
     def ip(self) -> str:
-        return (self.r.get('ip') or b'').decode()
+        return self.r.get('ip') or ''
     
     @ip.setter
     def ip(self, val: str):
@@ -84,7 +84,7 @@ class States(object):
 
     @property
     def my_callsign(self) -> str:
-        return (self.r.get('my_callsign') or b'').decode()
+        return self.r.get('my_callsign') or ''
     
     @my_callsign.setter
     def my_callsign(self, val: str):
@@ -92,7 +92,7 @@ class States(object):
 
     @property
     def my_grid(self) -> str:
-        return (self.r.get('my_grid') or b'').decode()
+        return self.r.get('my_grid') or ''
     
     @my_grid.setter
     def my_grid(self, val: str):
@@ -100,7 +100,7 @@ class States(object):
 
     @property
     def dx_callsign(self) -> str:
-        return (self.r.get('dx_callsign') or b'').decode()
+        return self.r.get('dx_callsign') or ''
     
     @dx_callsign.setter
     def dx_callsign(self, val: str):
@@ -108,7 +108,7 @@ class States(object):
 
     @property
     def dx_grid(self) -> str:
-        return (self.r.get('dx_grid') or b'').decode()
+        return self.r.get('dx_grid') or ''
     
     @dx_grid.setter
     def dx_grid(self, val: str):
@@ -124,7 +124,7 @@ class States(object):
 
     @property
     def mode(self) -> str:
-        return (self.r.get('mode') or b'').decode()
+        return self.r.get('mode') or ''
     
     @mode.setter
     def mode(self, val: str):
@@ -180,7 +180,7 @@ class States(object):
     
     @property
     def last_tx(self) -> str:
-        return (self.r.get('last_tx') or b'').decode()
+        return self.r.get('last_tx') or ''
     
     @last_tx.setter
     def last_tx(self, val: str):
@@ -248,7 +248,7 @@ class States(object):
 
     @property
     def current_callsign(self) -> str:
-        return (self.r.get('current_callsign') or b'').decode()
+        return self.r.get('current_callsign') or ''
     
     @current_callsign.setter
     def current_callsign(self, val: str):
@@ -397,7 +397,7 @@ class States(object):
             elif k_types == int:
                 result[k] = int(v or 0)
             else:
-                result[k] = (v or b'').decode()
+                result[k] = v or ''
         
         return result
     
