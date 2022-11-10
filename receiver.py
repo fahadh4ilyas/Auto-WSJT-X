@@ -626,6 +626,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 f'[CALLSIGN: {data["callsign"]}] Adding {data["Message"]}'
             )
             data['importance'] = 1 + priority_country.get(data['country'], 0)
+            if latest_data and get_transmit_data_type(latest_data) == get_transmit_data_type(data):
+                data['isSpam'] = latest_data.get('isSpam', False)
             call_coll.update_one(
                 {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
                 {'$set': data},
@@ -683,6 +685,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     f'[CALLSIGN: {data["callsign"]}] Adding {data["Message"]}'
                 )
                 data['importance'] = 1 + priority_country.get(data['country'], 0)
+                if latest_data and get_transmit_data_type(latest_data) == get_transmit_data_type(data):
+                    data['isSpam'] = latest_data.get('isSpam', False)
                 call_coll.update_one(
                     {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
                     {'$set': data},
@@ -749,7 +753,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     data['importance'] = 1 + priority_country.get(data['country'], 0)
                     data['tries'] = states_list['num_tries_call_busy']
                     data['tried'] = latest_data.get('tried', False)
-                    data['isSpam'] = latest_data.get('isSpam', False)
+                    if latest_data and get_transmit_data_type(latest_data) == get_transmit_data_type(data):
+                        data['isSpam'] = latest_data.get('isSpam', False)
                     call_coll.update_one(
                         {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
                         {'$set': data},
@@ -809,7 +814,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     data['importance'] = 1 + priority_country.get(data['country'], 0)
                     data['tries'] = states_list['num_tries_call_busy']
                     data['tried'] = latest_data.get('tried', False)
-                    data['isSpam'] = latest_data.get('isSpam', False)
+                    if latest_data and get_transmit_data_type(latest_data) == get_transmit_data_type(data):
+                        data['isSpam'] = latest_data.get('isSpam', False)
                     call_coll.update_one(
                         {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
                         {'$set': data},
@@ -869,7 +875,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     data['importance'] = 1 + priority_country.get(data['country'], 0)
                     data['tries'] = states_list['num_tries_call_busy']
                     data['tried'] = latest_data.get('tried', False)
-                    data['isSpam'] = latest_data.get('isSpam', False)
+                    if latest_data and get_transmit_data_type(latest_data) == get_transmit_data_type(data):
+                        data['isSpam'] = latest_data.get('isSpam', False)
                     call_coll.update_one(
                         {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
                         {'$set': data},
