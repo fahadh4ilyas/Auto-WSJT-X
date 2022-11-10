@@ -86,10 +86,8 @@ def filter_cq(data: dict, states: States) -> bool:
         return False
 
     if data.get('extra', None):
-        if data['extra'] == 'DX' and data.get('country', '') == 'Indonesia':
+        if (data['extra'] == 'DX' and data.get('country', '') == 'Indonesia') or data['extra'] != 'OC':
             return False
-        if data['extra'] in ['OC', 'AS']:
-            return True
         
     if 'grid' in data and states.new_grid and not done_coll.find_one(
         {
@@ -480,6 +478,92 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 'enable_transmit_counter',
                 'transmitter_started'
             )
+
+            packet_last_tx = packet.LastTxMsg or ''
+
+            matched = parsing_message(packet_last_tx)
+            latest_tx = states.last_tx
+            matched_latest = parsing_message(latest_tx)
+
+            isDifferent = latest_tx != packet_last_tx
+
+            if isDifferent:
+                logging.warning(
+                    f'[TX] [MODE: {current_mode}] [BAND: {current_band}] '
+                    f'[FREQUENCY: {states.txdf}] Changing message: {packet_last_tx}'
+                )
+
+            if isDifferent and matched.get('type', None) == 'R73':
+                qso_data = done_coll.find_one(
+                    {'callsign': matched['to'], 'band': current_band, 'mode': current_mode}
+                ) or {}
+                if not qso_data:
+                    logging.info(f'Logging QSO: {matched["to"]} at band {current_band} in mode {current_mode}')
+                    states.log_qso()
+                if states.transmitter_started and matched['R73'] != '73':
+                    current_data = call_coll.find_one(
+                        {'callsign': matched['to'], 'band': current_band, 'mode': current_mode}
+                    ) or {}
+                else:
+                    current_data = call_coll.find_one_and_delete(
+                        {'callsign': matched['to'], 'band': current_band, 'mode': current_mode}
+                    ) or {}
+                    if current_data:
+                        logging.warning(
+                            f'[DB] [MODE: {current_mode}] [BAND: {current_band}] '
+                            f'[CALLSIGN: {matched["to"]}] Removing {current_data["Message"]}'
+                        )
+                if not current_data:
+                    current_data['callsign'] = matched['to']
+                current_data.update({
+                    'confirmed': True,
+                    'fromScript': True,
+                    'timestamp': now,
+                    'callsign': matched['to'],
+                    'band': current_band,
+                    'mode': current_mode
+                })
+                location_data = get_location_data(current_data['prefixed_callsign'], current_data)
+                if 'country' not in current_data  and all([i in location_data for i in ['country', 'dxcc', 'continent']]):
+                    current_data.update({
+                        k: location_data[k] for k in ['country', 'dxcc', 'continent']
+                    })
+                grid_data = get_grid_data(
+                    current_data['callsign'],
+                    current_data.get('grid', None),
+                    location_data,
+                    current_data
+                )
+                current_data.update(grid_data)
+                if current_data.get('grid', None) is None:
+                    current_data.pop('grid')
+                if call_info2 and current_data.get('country', None) == 'United States' and 'state' not in current_data:
+                    if 'state' in qso_data:
+                        current_data.update(
+                            {
+                                k:qso_data[k] for k in ['state', 'county']
+                            }
+                        )
+                    else:
+                        state_data = get_state_data(current_data['callsign'])
+                        current_data.update(state_data)
+                current_data.pop('_id', None)
+                done_coll.update_one(
+                    {'callsign': matched['to'], 'band': current_band, 'mode': current_mode},
+                    {'$set': current_data},
+                    upsert=True
+                )
+            
+            if matched.get('type', None) == 'R73' and not (states.transmitter_started and matched['R73'] != '73'):
+                result = call_coll.find_one_and_delete(
+                    {'callsign': matched['to'], 'band': current_band, 'mode': current_mode}
+                )
+                if result:
+                    logging.warning(
+                        f'[DB] [MODE: {current_mode}] [BAND: {current_band}] '
+                        f'[CALLSIGN: {matched["to"]}] Removing {result["Message"]}'
+                    )
+            
             if states_list['num_disable_transmit']:
                 if states_list['transmitter_started']:
                     value = (states_list['enable_transmit_counter'] + 1) % states_list['num_disable_transmit']
