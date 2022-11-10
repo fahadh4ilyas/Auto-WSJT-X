@@ -543,10 +543,6 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
         if data['callsign'] in callsign_exc:
             logging.warning('The Callsign is blacklisted in callsign exception!')
             return
-        
-        if 'country' not in data:
-            logging.warning('The Callsign\'s country is not found')
-            return
 
         latest_data = call_coll.find_one_and_delete(
             {'callsign': data['callsign'], 'band': states_list['band'], 'mode': states_list['mode']}
@@ -576,6 +572,10 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             {'$set': data},
             upsert=True
         )
+
+        if 'country' not in data:
+            logging.warning('The Callsign\'s country is not found')
+            return
 
         if states_list['num_inactive_before_cut'] and data['callsign'] == LOCAL_STATES['current_callsign']:
             states.inactive_count = 0
