@@ -9,7 +9,8 @@ from handler import RollingFileHandler
 LOCAL_STATES = {
     'band': 0,
     'mode': '',
-    'transmitting': False
+    'transmitting': False,
+    'current_tx': ''
 }
 
 if MULTICAST:
@@ -38,10 +39,11 @@ def process_wsjt(_data: bytes, ip_from: tuple):
     elif isinstance(packet, wsjtx.WSStatus):
 
         logging.debug(f'[HOST: {ip_from[0]}:{ip_from[1]}] {packet}')
-
-        isTransmitting = packet.Transmitting and LOCAL_STATES['transmitting'] != packet.Transmitting
+        packet_last_tx = packet.LastTxMsg or ''
+        isTransmitting = packet.Transmitting and LOCAL_STATES['current_tx'] != packet_last_tx
 
         LOCAL_STATES['transmitting'] = packet.Transmitting
+        LOCAL_STATES['current_tx'] = packet_last_tx 
         LOCAL_STATES['band'] = freq_to_band((packet.Frequency or 135000)//1000)['band']
         LOCAL_STATES['mode'] = packet.Mode or ''
 
