@@ -335,7 +335,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                         {'callsign': matched['to'], 'band': current_band, 'mode': current_mode}
                     ) or {}
 
-                if result['nextTx'] == matched.get('type', None):
+                if result.get('nextTx', 'R73') == matched.get('type', None):
                 
                     states_list = states.get_states(
                         'num_inactive_before_cut',
