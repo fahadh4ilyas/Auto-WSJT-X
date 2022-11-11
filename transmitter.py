@@ -61,7 +61,7 @@ def transmitting(now: float, states_list: typing.Dict[str, States]):
     STATES_LIST_LOCAL = states_list[''].get_states(
         'band',
         'mode',
-        'transmit_counter',
+        'tries',
         'max_tries_change_freq'
     )
     
@@ -116,7 +116,7 @@ def transmitting(now: float, states_list: typing.Dict[str, States]):
         states_list[LATEST_NAMESPACE],
         CURRENT_DATA,
         IS_EVEN,
-        STATES_LIST_LOCAL['transmit_counter']%STATES_LIST_LOCAL['max_tries_change_freq'] == 0
+        STATES_LIST_LOCAL['tries']%STATES_LIST_LOCAL['max_tries_change_freq'] == 0
     )
     time.sleep(TIMING[CURRENT_DATA['mode']]['half']/2)
 
