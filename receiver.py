@@ -14,8 +14,6 @@ from logging import handlers
 
 IP_LOCK = []
 
-CURRENT_TX = ''
-
 DXCC_EXCEPTION = [country_to_dxcc.get(i,0) for i in DXCC_EXCEPTION]
 
 callsign_exc = []
@@ -49,7 +47,8 @@ with open(DXCC_PRIORITY) as f:
 LOCAL_STATES = {
     'my_callsign': '',
     'states_completed': False,
-    'current_callsign': ''
+    'current_callsign': '',
+    'current_tx': ''
 }
 
 NEXT_TRANSMIT = {
@@ -215,7 +214,7 @@ def get_state_data(callsign: str) -> dict:
     return data
 
 def get_transmit_data_type(data: dict) -> str:
-    global CURRENT_TX, NEXT_TRANSMIT, LOCAL_STATES
+    global NEXT_TRANSMIT, LOCAL_STATES
 
     return NEXT_TRANSMIT.get(
         data.get('to', None) == LOCAL_STATES['my_callsign'], 
@@ -278,20 +277,20 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
         current_band: int = freq_to_band(packet.Frequency//1000)['band']
         current_mode = packet.Mode
         packet_last_tx = packet.LastTxMsg or ''
-        isTransmitting = packet.Transmitting and CURRENT_TX != packet_last_tx
+        isTransmitting = packet.Transmitting and LOCAL_STATES['current_tx'] != packet_last_tx
         isDoneTransmitting = not packet.Transmitting and states_list['transmitting'] != packet.Transmitting
         isChangingBand = latest_band != 0 and latest_band != current_band
         isChangingMode = latest_mode != '' and latest_mode != current_mode
 
         states.transmitting = packet.Transmitting
-        CURRENT_TX = packet_last_tx
+        LOCAL_STATES['current_tx'] = packet_last_tx
 
         if isTransmitting:
 
             logging.info(
                 f'[HOST: {ip_from[0]}:{ip_from[1]}] '
                 f'[TX] [MODE: {current_mode}] [BAND: {current_band}] '
-                f'[FREQUENCY: {states.txdf}] {CURRENT_TX}'
+                f'[FREQUENCY: {states.txdf}] {LOCAL_STATES["current_tx"]}'
             )
 
         if isDoneTransmitting:
@@ -307,11 +306,11 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             states.even_frequencies = [MIN_FREQUENCY, MAX_FREQUENCY]
             states.odd_frequencies = [MIN_FREQUENCY, MAX_FREQUENCY]
 
-            matched = parsing_message(CURRENT_TX)
+            matched = parsing_message(LOCAL_STATES['current_tx'])
             latest_tx = states.last_tx
             matched_latest = parsing_message(latest_tx)
 
-            states.last_tx = CURRENT_TX
+            states.last_tx = LOCAL_STATES['current_tx']
             LOCAL_STATES['current_callsign'] = matched.get('current_callsign', '')
 
             isSameMessage = matched.get('type', None) == matched_latest.get('type', None) and \
