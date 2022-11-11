@@ -642,10 +642,6 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] Cannot parsing the message!')
             return
 
-        if data['callsign'] in callsign_exc:
-            logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] The Callsign is blacklisted in callsign exception!')
-            return
-
         latest_data = call_coll.find_one_and_delete(
             {'callsign': data['callsign'], 'band': states_list['band'], 'mode': states_list['mode']}
         ) or {}
@@ -655,6 +651,10 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 f'[DB] [MODE: {states_list["mode"]}] [BAND: {states_list["band"]}] '
                 f'[CALLSIGN: {latest_data["callsign"]}] Removing {latest_data["Message"]}'
             )
+
+        if data['callsign'] in callsign_exc:
+            logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] The Callsign is blacklisted in callsign exception!')
+            return
 
         additional_data = {
             'band': states_list['band'],
