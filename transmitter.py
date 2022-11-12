@@ -55,9 +55,6 @@ def replying(states: States, CURRENT_DATA: dict, txOdd: bool, renew_frequency: b
 def transmitting(now: float, states: States):
     global IS_EVEN
 
-    if states.transmitter_paused:
-        raise TransmitterPaused()
-
     if states.transmit_phase:
         states.enable_monitoring()
         states.transmit_phase = False
@@ -135,6 +132,8 @@ def main(states_list: typing.Dict[str, States]):
         try:
             if states_list[''].closed:
                 raise ValueError('WSJT-X Closed!')
+            if states_list[''].transmitter_paused:
+                raise TransmitterPaused()
             now = datetime.now().timestamp()
             if now%TIMING['FT8']['half'] < TIMING['FT8']['half'] - 0.2:
                 time.sleep(0.02)
