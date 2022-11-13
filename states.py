@@ -498,9 +498,6 @@ class States(object):
         else:
             self.change_transmit_sequence(TxSequence.EVEN)
 
-        if not self.tx_enabled:
-            self.enable_transmit()
-
         if skipGrid:
             self.disable_gridtx()
         else:
@@ -518,6 +515,9 @@ class States(object):
 
         if isinstance(TXdf, int):
             self.change_frequency(TXdf)
+
+        if not self.tx_enabled:
+            self.enable_transmit()
     
     def log_qso(self):
         packet = wsjtx.WSEnableTx()

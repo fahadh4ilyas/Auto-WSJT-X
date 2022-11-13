@@ -79,6 +79,9 @@ message_coll = db.message
 
 def filter_cq(data: dict, states: States) -> bool:
 
+    if not data['isNewCallsign']:
+        return False
+
     if data['SNR'] < states.min_db:
         return False
 
@@ -178,13 +181,13 @@ def completing_data(data: dict, additional_data: dict, now: float = None, latest
     data['isEven'] = (0 <= (data['Time']/1000)%TIMING[data['mode']]['full'] < TIMING[data['mode']]['half'])
     data['skipGrid'] = True
     data['nextTx'] = get_transmit_data_type(data)
-    data['isNewCallsign'] = not done_coll.find_one(
+    data['isNewCallsign'] = latest_data.get('isNewCallsign', not done_coll.find_one(
         {
             'callsign': data['callsign'],
             'band': data['band'],
             'mode': data['mode']
         }
-    )
+    ))
     data['isNewDXCC'] = latest_data.get('isNewDXCC', not done_coll.find_one(
         {
             'dxcc': data.get('dxcc', 0),
@@ -431,8 +434,9 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     logging.info(f'Logging QSO: {matched["to"]} at band {current_band} in mode {current_mode}')
                     states.log_qso()
                 if states.transmitter_started and matched['R73'] != '73':
-                    current_data = call_coll.find_one(
-                        {'callsign': matched['to'], 'band': current_band, 'mode': current_mode}
+                    current_data = call_coll.find_one_and_update(
+                        {'callsign': matched['to'], 'band': current_band, 'mode': current_mode},
+                        {'$set': {'isNewCallsign': False, 'isNewDXCC': False}}
                     ) or {}
                 else:
                     current_data = call_coll.find_one_and_delete(
@@ -631,10 +635,6 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                         )
                         return
 
-            if not data['isNewCallsign']:
-                logging.warning('The Callsign is already blacklisted!')
-                return
-
             if not filter_cq(data, states):
                 logging.warning('The Callsign is not following criteria!')
                 return
@@ -693,10 +693,6 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                                 upsert=True
                             )
                             return
-                
-                if not data['isNewCallsign']:
-                    logging.warning('The Callsign is already blacklisted!')
-                    return
 
                 if not filter_cq(data, states):
                     logging.warning('The Callsign is not following criteria!')
@@ -766,10 +762,6 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     logging.warning('The Callsign is calling someone that is blacklisted!')
                     return
 
-                if not data['isNewCallsign']:
-                    logging.warning('The Callsign is already blacklisted!')
-                    return
-
                 if not filter_cq(data, states):
                     logging.warning('The Callsign is not following criteria!')
                     return
@@ -835,10 +827,6 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     logging.warning('The Callsign is calling someone that is blacklisted!')
                     return
 
-                if not data['isNewCallsign']:
-                    logging.warning('The Callsign is already blacklisted!')
-                    return
-
                 if not filter_cq(data, states):
                     logging.warning('The Callsign is not following criteria!')
                     return
@@ -902,10 +890,6 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
                 if data['to'] in receiver_exc:
                     logging.warning('The Callsign is calling someone that is blacklisted!')
-                    return
-
-                if not data['isNewCallsign']:
-                    logging.warning('The Callsign is already blacklisted!')
                     return
 
                 if not filter_cq(data, states):
