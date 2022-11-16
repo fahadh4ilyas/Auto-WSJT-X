@@ -253,7 +253,12 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
     elif isinstance(packet, wsjtx.WSStatus):
 
         now = datetime.now().timestamp()
-        logging.debug(packet)
+        logging.debug(f'[MY CALLSIGN: {packet.DeCall}] [MY GRID: {packet.DeGrid}] '
+            f'[DX CALLSIGN: {packet.DXCall}] [DX GRID: {packet.DXGrid}] '
+            f'[TX ENABLED: {packet.TXEnabled}] [DECODING: {packet.Decoding}] [TRANSMITTING: {packet.Transmitting}] '
+            f'[TXDF: {packet.TXdf}] [RXDF: {packet.RXdf}] [TX EVEN: {packet.TxEven}] '
+            f'[FREQUENCY: {packet.Frequency}] [MODE: {packet.Mode}] [LAST TX: {packet.LastTxMsg}]'
+        )
         LOCAL_STATES['my_callsign'] = packet.DeCall or ''
         states.change_states(
             my_callsign = packet.DeCall or '',
@@ -434,6 +439,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     'fromScript': True,
                     'timestamp': now,
                     'callsign': matched['to'],
+                    'prefixed_callsign': matched['prefixed_to'],
                     'band': current_band,
                     'mode': current_mode
                 })
@@ -598,6 +604,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             if latest_data and latest_data.get('to', None) == LOCAL_STATES['my_callsign']:
                 if latest_data.get('R73', None) != '73':
                     logging.warning('Already CQ-ing even though still talking with me!')
+                    if latest_data['tried'] and latest_data['nextTx'] == 'R73':
+                        return
                     if not (latest_data['tried'] and latest_data['isReemerging']):
                         if latest_data['tried']:
                             latest_data['expired'] = False
@@ -657,6 +665,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 if latest_data and latest_data.get('to', None) == LOCAL_STATES['my_callsign']:
                     if latest_data.get('R73', None) != '73':
                         logging.warning('Sending 73 to other callsign even though still talking with me!')
+                        if latest_data['tried'] and latest_data['nextTx'] == 'R73':
+                            return
                         if not (latest_data['tried'] and latest_data['isReemerging']):
                             if latest_data['tried']:
                                 latest_data['expired'] = False
@@ -718,6 +728,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 if latest_data and latest_data.get('to', None) == LOCAL_STATES['my_callsign']:
                     if latest_data.get('R73', None) != '73':
                         logging.warning('Sending Grid to other callsign even though still talking with me!')
+                        if latest_data['tried'] and latest_data['nextTx'] == 'R73':
+                            return
                         if not (latest_data['tried'] and latest_data['isReemerging']):
                             if latest_data['tried']:
                                 latest_data['expired'] = False
@@ -783,6 +795,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 if latest_data and latest_data.get('to', None) == LOCAL_STATES['my_callsign']:
                     if latest_data.get('R73', None) != '73':
                         logging.warning('Sending signal to other callsign even though still talking with me!')
+                        if latest_data['tried'] and latest_data['nextTx'] == 'R73':
+                            return
                         if not (latest_data['tried'] and latest_data['isReemerging']):
                             if latest_data['tried']:
                                 latest_data['expired'] = False
@@ -848,6 +862,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 if latest_data.get('to', None) == LOCAL_STATES['my_callsign']:
                     if latest_data.get('R73', None) != '73':
                         logging.warning('Replying signal to other callsign even though still talking with me!')
+                        if latest_data['tried'] and latest_data['nextTx'] == 'R73':
+                            return
                         if not (latest_data['tried'] and latest_data['isReemerging']):
                             if latest_data['tried']:
                                 latest_data['expired'] = False
@@ -990,7 +1006,7 @@ def main(sock: socket.socket, states_list: typing.Dict[str, States]):
     
 if __name__ == '__main__':
     file_handlers = handlers.RotatingFileHandler(os.path.join(CURRENT_DIR, 'log', 'receiver.log'), maxBytes=10*1024*1024, backupCount=5)
-    file_handlers.setLevel(logging.INFO)
+    file_handlers.setLevel(logging.DEBUG if DEBUGGING else logging.INFO)
     stream_handlers = logging.StreamHandler()
     stream_handlers.setLevel(logging.DEBUG if DEBUGGING else logging.INFO)
     logging.basicConfig(
