@@ -317,7 +317,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             latest_tx = states.last_tx
             matched_latest = parsing_message(latest_tx)
 
-            LOCAL_STATES['current_callsign'] = matched.get('current_callsign', '')
+            LOCAL_STATES['current_callsign'] = matched.get('to', '')
             states.change_states(
                 last_tx = LOCAL_STATES['current_tx'],
                 last_tx_type = matched.get('type', ''),
