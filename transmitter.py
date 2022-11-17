@@ -89,7 +89,8 @@ def transmitting(now: float, states: States):
         'tries',
         'transmit_counter',
         'max_tries_change_freq',
-        'current_callsign'
+        'current_callsign',
+        'last_tx_type'
     )
     
     logging.info('Finding new message to reply')
@@ -140,7 +141,7 @@ def transmitting(now: float, states: States):
             states,
             CURRENT_DATA,
             IS_EVEN,
-            STATES_LIST_LOCAL['transmit_counter'] > 0,
+            STATES_LIST_LOCAL['last_tx_type'] != CURRENT_DATA['nextTx'],
             STATES_LIST_LOCAL['current_callsign'] != CURRENT_DATA['callsign']
         )
     time.sleep(TIMING[CURRENT_DATA['mode']]['half']/2)

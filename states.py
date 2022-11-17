@@ -54,6 +54,7 @@ class States(object):
             'tries': int,
             'transmit_counter': int,
             'enable_transmit_counter': int,
+            'last_tx_type': str,
             'num_inactive_before_cut': int,
             'num_tries_call_busy': int,
             'num_disable_transmit': int,
@@ -286,6 +287,14 @@ class States(object):
     @enable_transmit_counter.setter
     def enable_transmit_counter(self, val: int):
         self.r.set('enable_transmit_counter', val)
+
+    @property
+    def last_tx_type(self) -> str:
+        return self.r.get('last_tx_type') or ''
+    
+    @last_tx_type.setter
+    def last_tx_type(self, val: str):
+        self.r.set('last_tx_type', val)
     # ==========================================================
 
     # CONFIGURABLE PARAMS
