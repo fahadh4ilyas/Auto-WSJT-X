@@ -298,11 +298,16 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             states.transmitter_started = False
 
             if states_list['current_callsign']:
-                call_coll.delete_one({
+                intervention_result = call_coll.find_one_and_delete({
                     'callsign': states_list['current_callsign'],
                     'band': current_band,
                     'mode': current_mode
                 })
+                if intervention_result:
+                    logging.warning(
+                        f'[DB] [MODE: {intervention_result["mode"]}] [BAND: {intervention_result["band"]}] '
+                        f'[CALLSIGN: {intervention_result["callsign"]}] Removing because of intervention'
+                    )
                 states.current_callsign = ''
 
         if isTransmitting:
