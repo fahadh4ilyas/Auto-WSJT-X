@@ -141,7 +141,7 @@ def transmitting(now: float, states: States):
             states,
             CURRENT_DATA,
             IS_EVEN,
-            STATES_LIST_LOCAL['last_tx_type'] != CURRENT_DATA['nextTx'],
+            STATES_LIST_LOCAL['last_tx_type'] == CURRENT_DATA['nextTx'],
             STATES_LIST_LOCAL['current_callsign'] != CURRENT_DATA['callsign']
         )
     time.sleep(TIMING[CURRENT_DATA['mode']]['half']/2)
