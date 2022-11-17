@@ -339,8 +339,11 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             latest_tx = states.last_tx
             matched_latest = parsing_message(latest_tx)
 
-            states.last_tx = LOCAL_STATES['current_tx']
             LOCAL_STATES['current_callsign'] = matched.get('current_callsign', '')
+            states.change_states(
+                last_tx = LOCAL_STATES['current_tx'],
+                current_callsign = LOCAL_STATES['current_callsign']
+            )
 
             isSameMessage = matched.get('type', None) == matched_latest.get('type', None) and \
                 matched.get('to', None) == matched_latest.get('to', None)
