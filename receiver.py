@@ -47,7 +47,8 @@ LOCAL_STATES = {
     'my_callsign': '',
     'states_completed': False,
     'current_callsign': '',
-    'current_tx': ''
+    'current_tx': '',
+    'is_halting': False
 }
 
 NEXT_TRANSMIT = {
@@ -276,11 +277,14 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
         current_mode = packet.Mode
         packet_last_tx = packet.LastTxMsg or ''
         current_dx = packet.DXCall or ''
+        current_halting = packet.TxHaltClicked
         isTransmitting = packet.Transmitting and LOCAL_STATES['current_tx'] != packet_last_tx
         isDoneTransmitting = not packet.Transmitting and states_list['transmitting'] != packet.Transmitting
         isChangingBand = latest_band != 0 and latest_band != current_band
         isChangingMode = latest_mode != '' and latest_mode != current_mode
         isChangingDX = latest_dx != current_dx
+        isHalting = current_halting and LOCAL_STATES['is_halting'] != current_halting
+        LOCAL_STATES['is_halting'] = current_halting
 
         states.change_states(
             transmitting = packet.Transmitting,
@@ -288,7 +292,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
         )
         LOCAL_STATES['current_tx'] = packet_last_tx
 
-        if isChangingDX and current_dx != states_list['current_callsign']:
+        if isHalting or (isChangingDX and current_dx != states_list['current_callsign']):
             logging.warning(f'Detecting intervention!')
             states.transmitter_paused = True
             states.transmitter_started = False
