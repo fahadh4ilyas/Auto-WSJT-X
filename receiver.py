@@ -238,21 +238,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
     if isinstance(packet, wsjtx.WSHeartbeat):
 
         logging.info(f'IP: {ip_from[0]} | Port: {ip_from[1]}')
-        states.change_states(
-            closed = False
-        )
-        if CALLSIGN_EXCEPTION:
-            try:
-                with open(CALLSIGN_EXCEPTION) as f:
-                    callsign_exc = f.read().splitlines()
-            except:
-                pass
-        if RECEIVER_EXCEPTION:
-            try:
-                with open(RECEIVER_EXCEPTION) as f:
-                    receiver_exc = f.read().splitlines()
-            except:
-                pass
+        states.closed = False
     
     elif isinstance(packet, wsjtx.WSStatus):
 
@@ -312,6 +298,18 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     },
                     {'$set': {'expired': True}}
                 )
+            if CALLSIGN_EXCEPTION:
+                try:
+                    with open(CALLSIGN_EXCEPTION) as f:
+                        callsign_exc = f.read().splitlines()
+                except:
+                    pass
+            if RECEIVER_EXCEPTION:
+                try:
+                    with open(RECEIVER_EXCEPTION) as f:
+                        receiver_exc = f.read().splitlines()
+                except:
+                    pass
             states.even_frequencies = [MIN_FREQUENCY, MAX_FREQUENCY]
             states.odd_frequencies = [MIN_FREQUENCY, MAX_FREQUENCY]
 
