@@ -571,10 +571,6 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 f'[CALLSIGN: {latest_data["callsign"]}] Removing {latest_data["Message"]}'
             )
 
-        if data['callsign'] in callsign_exc:
-            logging.warning('The Callsign is blacklisted in callsign exception!')
-            return
-
         additional_data = {
             'band': states_list['band'],
             'mode': states_list['mode']
@@ -593,6 +589,10 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             {'$set': data},
             upsert=True
         )
+
+        if data['callsign'] in callsign_exc:
+            logging.warning('The Callsign is blacklisted in callsign exception!')
+            return
 
         if 'country' not in data:
             logging.warning('The Callsign\'s country is not found')
