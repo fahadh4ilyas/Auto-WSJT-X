@@ -80,16 +80,20 @@ message_coll = db.message
 def filter_cq(data: dict, states: States) -> bool:
 
     if not data['isNewCallsign']:
+        logging.warning('Already QSO with this callsign')
         return False
 
     if data['SNR'] < states.min_db:
+        logging.warning('The message\'s signal is below minimum threshold')
         return False
 
     if DXCC_EXCEPTION and 'dxcc' in data and data['dxcc'] in DXCC_EXCEPTION:
+        logging.warning('The callsign is inside DXCC exception')
         return False
 
     if data.get('extra', None):
         if (data['extra'] == 'DX' and data.get('country', '') == 'Indonesia') or data['extra'] != 'OC':
+            logging.warning('The callsign specifically didn\'t want to call us')
             return False
         
     if 'grid' in data and states.new_grid and not done_coll.find_one(
@@ -624,7 +628,6 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                         return
 
             if not filter_cq(data, states):
-                logging.warning('The Callsign is not following criteria!')
                 return
 
             logging.info(
@@ -685,7 +688,6 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                             return
 
                 if not filter_cq(data, states):
-                    logging.warning('The Callsign is not following criteria!')
                     return
 
                 logging.info(
@@ -755,7 +757,6 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     return
 
                 if not filter_cq(data, states):
-                    logging.warning('The Callsign is not following criteria!')
                     return
 
                 logging.info(
@@ -822,7 +823,6 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     return
 
                 if not filter_cq(data, states):
-                    logging.warning('The Callsign is not following criteria!')
                     return
 
                 logging.info(
@@ -889,7 +889,6 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     return
 
                 if not filter_cq(data, states):
-                    logging.warning('The Callsign is not following criteria!')
                     return
 
                 logging.info(
