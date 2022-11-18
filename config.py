@@ -120,6 +120,9 @@ SORTBY = [
 # Only used for adif_parser.py
 LOG_LOCATION = os.path.join(CURRENT_DIR, 'data', 'log.adi')
 
+# List of valid callsign based on lotw
+VALID_CALLSIGN_LOCATION = os.path.join(CURRENT_DIR, 'data', 'lotw-user-activity.csv')
+
 # List of receiver callsign that user want to be blacklisted
 # if that callsign is being called by callsign that we wanted
 # Restarting receiver + transmitter is not required (but recommended)
