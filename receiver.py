@@ -125,13 +125,23 @@ def filter_cq(data: dict, states: States) -> bool:
     return False
 
 def validate_callsign(data: dict) -> bool:
-    global valid_callsign
+    global valid_callsign, callsign_exc
+
+    if data['isValid']:
+        return True
 
     if data['callsign'] in valid_callsign:
+        data['isValid'] = True
         return True
     
     if call_info2 and call_info2.is_valid_callsign(data['callsign']):
+        data['isValid'] = True
         return True
+    
+    callsign_exc.append(data['callsign'])
+    if CALLSIGN_EXCEPTION:
+        with open(CALLSIGN_EXCEPTION, 'w') as f:
+            f.write('\n'.join(callsign_exc))
 
     return False
 
@@ -205,6 +215,7 @@ def completing_data(data: dict, additional_data: dict, now: float = None, latest
     data['isReemerging'] = False
     data['isSpam'] = False
     data['isEven'] = (0 <= (data['Time']/1000)%TIMING[data['mode']]['full'] < TIMING[data['mode']]['half'])
+    data['isValid'] = latest_data.get('isValid', False)
     data['skipGrid'] = True
     data['nextTx'] = get_transmit_data_type(data)
     data['isNewCallsign'] = latest_data.get('isNewCallsign', not done_coll.find_one(
