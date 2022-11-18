@@ -1,4 +1,4 @@
-import re, socket, select, wsjtx, struct, requests, typing, time
+import re, socket, select, wsjtx, struct, requests, typing, time, csv
 
 from datetime import datetime, timedelta
 
@@ -28,6 +28,16 @@ if RECEIVER_EXCEPTION:
     try:
         with open(RECEIVER_EXCEPTION) as f:
             receiver_exc = f.read().splitlines()
+    except:
+        pass
+
+valid_callsign = []
+if VALID_CALLSIGN_LOCATION:
+    try:
+        with open(VALID_CALLSIGN_LOCATION) as f:
+            data = csv.reader(f)
+            for r in data:
+                valid_callsign.append(r[0])
     except:
         pass
 
@@ -112,6 +122,17 @@ def filter_cq(data: dict, states: States) -> bool:
     if data['isNewCallsign']:
         return True
     
+    return False
+
+def validate_callsign(data: dict) -> bool:
+    global valid_callsign
+
+    if data['callsign'] in valid_callsign:
+        return True
+    
+    if call_info2 and call_info2.is_valid_callsign(data['callsign']):
+        return True
+
     return False
 
 def parsing_message(message: str) -> dict:
@@ -678,6 +699,10 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
             if not filter_cq(data, states):
                 return
+            
+            if not validate_callsign(data):
+                logging.warning('This callsign is probably not a valid callsign!')
+                return
 
             logging.info(
                 f'[DB] [MODE: {data["mode"]}] [BAND: {data["band"]}] '
@@ -748,6 +773,10 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                             return
 
                 if not filter_cq(data, states):
+                    return
+
+                if not validate_callsign(data):
+                    logging.warning('This callsign is probably not a valid callsign!')
                     return
 
                 logging.info(
@@ -830,6 +859,10 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 if not filter_cq(data, states):
                     return
 
+                if not validate_callsign(data):
+                    logging.warning('This callsign is probably not a valid callsign!')
+                    return
+
                 logging.info(
                     f'[DB] [MODE: {data["mode"]}] [BAND: {data["band"]}] '
                     f'[CALLSIGN: {data["callsign"]}] Adding {data["Message"]}'
@@ -907,6 +940,10 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 if not filter_cq(data, states):
                     return
 
+                if not validate_callsign(data):
+                    logging.warning('This callsign is probably not a valid callsign!')
+                    return
+
                 logging.info(
                     f'[DB] [MODE: {data["mode"]}] [BAND: {data["band"]}] '
                     f'[CALLSIGN: {data["callsign"]}] Adding {data["Message"]}'
@@ -982,6 +1019,10 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     return
 
                 if not filter_cq(data, states):
+                    return
+
+                if not validate_callsign(data):
+                    logging.warning('This callsign is probably not a valid callsign!')
                     return
 
                 logging.info(
