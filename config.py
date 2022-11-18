@@ -79,6 +79,12 @@ MAX_FREQUENCY = 2200
 # restart receiver + transmitter
 EXPIRED_TIME = 0
 
+# Maximum time callsign will be in spam
+# Set to 0 will make the callsign in spam indefinitely
+# Note: restarting receiver will remove callsign from spam
+# restart receiver + transmitter
+RELEASE_FROM_SPAM_TIME = 0
+
 # Level of aggresiveness towards new DXCC message
 # Set to 0 to disable aggresiveness
 # restart receiver + transmitter
