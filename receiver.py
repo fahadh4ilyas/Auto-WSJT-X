@@ -771,7 +771,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             if not filter_cq(data, states):
                 return
             
-            if not validate_callsign(data):
+            if VALIDATE_CALLSIGN and not validate_callsign(data):
                 logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] This callsign is probably not a valid callsign!')
                 return
 
@@ -846,7 +846,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 if not filter_cq(data, states):
                     return
 
-                if not validate_callsign(data):
+                if VALIDATE_CALLSIGN and not validate_callsign(data):
                     logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] This callsign is probably not a valid callsign!')
                     return
 
@@ -930,7 +930,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 if not filter_cq(data, states):
                     return
 
-                if not validate_callsign(data):
+                if VALIDATE_CALLSIGN and not validate_callsign(data):
                     logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] This callsign is probably not a valid callsign!')
                     return
 
@@ -1011,7 +1011,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 if not filter_cq(data, states):
                     return
 
-                if not validate_callsign(data):
+                if VALIDATE_CALLSIGN and not validate_callsign(data):
                     logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] This callsign is probably not a valid callsign!')
                     return
 
@@ -1092,7 +1092,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 if not filter_cq(data, states):
                     return
 
-                if not validate_callsign(data):
+                if VALIDATE_CALLSIGN and not validate_callsign(data):
                     logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] This callsign is probably not a valid callsign!')
                     return
 
