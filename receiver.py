@@ -675,8 +675,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     'grid': data['grid']
                 }}, upsert=True)
 
-            if latest_data and latest_data.get('to', None) == LOCAL_STATES['my_callsign']:
-                if latest_data.get('R73', None) != '73':
+            if latest_data:
+                if latest_data.get('to', None) == LOCAL_STATES['my_callsign'] and latest_data.get('R73', None) != '73':
                     logging.warning('Already CQ-ing even though still talking with me!')
                     if latest_data['tried'] and latest_data['nextTx'] == 'R73':
                         return
@@ -696,17 +696,17 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                             upsert=True
                         )
                         return
-                    elif latest_data['isSpam']:
-                        logging.info(
-                            f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
-                            f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
-                        )
-                        call_coll.update_one(
-                            {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
-                            {'$set': latest_data},
-                            upsert=True
-                        )
-                        return
+                if latest_data['isSpam']:
+                    logging.info(
+                        f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
+                        f'[CALLSIGN: {latest_data["callsign"]}] Adding back to spam {latest_data["Message"]}'
+                    )
+                    call_coll.update_one(
+                        {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
+                        {'$set': latest_data},
+                        upsert=True
+                    )
+                    return
 
             if not filter_cq(data, states):
                 return
@@ -750,8 +750,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
             else:
 
-                if latest_data and latest_data.get('to', None) == LOCAL_STATES['my_callsign']:
-                    if latest_data.get('R73', None) != '73':
+                if latest_data: 
+                    if latest_data.get('to', None) == LOCAL_STATES['my_callsign'] and latest_data.get('R73', None) != '73':
                         logging.warning('Sending 73 to other callsign even though still talking with me!')
                         if latest_data['tried'] and latest_data['nextTx'] == 'R73':
                             return
@@ -771,17 +771,17 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                                 upsert=True
                             )
                             return
-                        elif latest_data['isSpam']:
-                            logging.info(
-                                f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
-                                f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
-                            )
-                            call_coll.update_one(
-                                {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
-                                {'$set': latest_data},
-                                upsert=True
-                            )
-                            return
+                    if latest_data['isSpam']:
+                        logging.info(
+                            f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
+                            f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
+                        )
+                        call_coll.update_one(
+                            {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
+                            {'$set': latest_data},
+                            upsert=True
+                        )
+                        return
 
                 if not filter_cq(data, states):
                     return
@@ -827,8 +827,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
             else:
 
-                if latest_data and latest_data.get('to', None) == LOCAL_STATES['my_callsign']:
-                    if latest_data.get('R73', None) != '73':
+                if latest_data:
+                    if latest_data.get('to', None) == LOCAL_STATES['my_callsign'] and latest_data.get('R73', None) != '73':
                         logging.warning('Sending Grid to other callsign even though still talking with me!')
                         if latest_data['tried'] and latest_data['nextTx'] == 'R73':
                             return
@@ -848,17 +848,17 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                                 upsert=True
                             )
                             return
-                        elif latest_data['isSpam']:
-                            logging.info(
-                                f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
-                                f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
-                            )
-                            call_coll.update_one(
-                                {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
-                                {'$set': latest_data},
-                                upsert=True
-                            )
-                            return
+                    if latest_data['isSpam']:
+                        logging.info(
+                            f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
+                            f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
+                        )
+                        call_coll.update_one(
+                            {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
+                            {'$set': latest_data},
+                            upsert=True
+                        )
+                        return
 
                 if not states_list['num_tries_call_busy']:
                     return
@@ -908,8 +908,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
             else:
                 
-                if latest_data and latest_data.get('to', None) == LOCAL_STATES['my_callsign']:
-                    if latest_data.get('R73', None) != '73':
+                if latest_data: 
+                    if latest_data.get('to', None) == LOCAL_STATES['my_callsign'] and latest_data.get('R73', None) != '73':
                         logging.warning('Sending signal to other callsign even though still talking with me!')
                         if latest_data['tried'] and latest_data['nextTx'] == 'R73':
                             return
@@ -929,17 +929,17 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                                 upsert=True
                             )
                             return
-                        elif latest_data['isSpam']:
-                            logging.info(
-                                f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
-                                f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
-                            )
-                            call_coll.update_one(
-                                {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
-                                {'$set': latest_data},
-                                upsert=True
-                            )
-                            return
+                    if latest_data['isSpam']:
+                        logging.info(
+                            f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
+                            f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
+                        )
+                        call_coll.update_one(
+                            {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
+                            {'$set': latest_data},
+                            upsert=True
+                        )
+                        return
 
                 if not states_list['num_tries_call_busy']:
                     return
@@ -989,8 +989,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
             else:
                 
-                if latest_data.get('to', None) == LOCAL_STATES['my_callsign']:
-                    if latest_data.get('R73', None) != '73':
+                if latest_data:
+                    if latest_data.get('to', None) == LOCAL_STATES['my_callsign'] and latest_data.get('R73', None) != '73':
                         logging.warning('Replying signal to other callsign even though still talking with me!')
                         if latest_data['tried'] and latest_data['nextTx'] == 'R73':
                             return
@@ -1010,17 +1010,17 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                                 upsert=True
                             )
                             return
-                        elif latest_data['isSpam']:
-                            logging.info(
-                                f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
-                                f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
-                            )
-                            call_coll.update_one(
-                                {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
-                                {'$set': latest_data},
-                                upsert=True
-                            )
-                            return
+                    if latest_data['isSpam']:
+                        logging.info(
+                            f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
+                            f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
+                        )
+                        call_coll.update_one(
+                            {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
+                            {'$set': latest_data},
+                            upsert=True
+                        )
+                        return
 
                 if not states_list['num_tries_call_busy']:
                     return
