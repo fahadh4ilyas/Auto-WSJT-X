@@ -668,7 +668,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                             upsert=True
                         )
                         return
-                if latest_data['isSpam']:
+                if latest_data['isSpam'] and latest_data['nextTx'] == data['nextTx']:
                     logging.info(
                         f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
                         f'[CALLSIGN: {latest_data["callsign"]}] Adding back to spam {latest_data["Message"]}'
@@ -743,7 +743,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                                 upsert=True
                             )
                             return
-                    if latest_data['isSpam']:
+                    if latest_data['isSpam'] and latest_data['nextTx'] == data['nextTx']:
                         logging.info(
                             f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
                             f'[CALLSIGN: {latest_data["callsign"]}] Adding back to spam {latest_data["Message"]}'
@@ -820,7 +820,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                                 upsert=True
                             )
                             return
-                    if latest_data['isSpam']:
+                    if latest_data['isSpam'] and latest_data['nextTx'] == data['nextTx']:
                         logging.info(
                             f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
                             f'[CALLSIGN: {latest_data["callsign"]}] Adding back to spam {latest_data["Message"]}'
@@ -901,7 +901,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                                 upsert=True
                             )
                             return
-                    if latest_data['isSpam']:
+                    if latest_data['isSpam'] and latest_data['nextTx'] == data['nextTx']:
                         logging.info(
                             f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
                             f'[CALLSIGN: {latest_data["callsign"]}] Adding back to spam {latest_data["Message"]}'
@@ -982,7 +982,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                                 upsert=True
                             )
                             return
-                    if latest_data['isSpam']:
+                    if latest_data['isSpam'] and latest_data['nextTx'] == data['nextTx']:
                         logging.info(
                             f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
                             f'[CALLSIGN: {latest_data["callsign"]}] Adding back to spam {latest_data["Message"]}'
