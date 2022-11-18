@@ -39,6 +39,10 @@ NEW_GRID = True
 # restart receiver + transmitter
 NEW_DXCC = True
 
+# Set to True to validate callsign first before adding to queue
+# restart receiver + transmitter
+VALIDATE_CALLSIGN = True
+
 # Set to True to add message in queue in log is not confirmed
 # restart receiver + transmitter
 WORK_ON_UNCONFIRMED_QSO = False
