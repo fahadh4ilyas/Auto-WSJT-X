@@ -774,7 +774,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     if latest_data['isSpam']:
                         logging.info(
                             f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
-                            f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
+                            f'[CALLSIGN: {latest_data["callsign"]}] Adding back to spam {latest_data["Message"]}'
                         )
                         call_coll.update_one(
                             {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
@@ -851,7 +851,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     if latest_data['isSpam']:
                         logging.info(
                             f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
-                            f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
+                            f'[CALLSIGN: {latest_data["callsign"]}] Adding back to spam {latest_data["Message"]}'
                         )
                         call_coll.update_one(
                             {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
@@ -932,7 +932,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     if latest_data['isSpam']:
                         logging.info(
                             f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
-                            f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
+                            f'[CALLSIGN: {latest_data["callsign"]}] Adding back to spam {latest_data["Message"]}'
                         )
                         call_coll.update_one(
                             {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
@@ -1013,7 +1013,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     if latest_data['isSpam']:
                         logging.info(
                             f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
-                            f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
+                            f'[CALLSIGN: {latest_data["callsign"]}] Adding back to spam {latest_data["Message"]}'
                         )
                         call_coll.update_one(
                             {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
