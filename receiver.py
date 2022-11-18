@@ -721,7 +721,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             return
 
         if 'country' not in data:
-            logging.warning('The Callsign\'s country is not found')
+            logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] The Callsign\'s country is not found')
             return
 
         if states_list['num_inactive_before_cut'] and data['callsign'] == LOCAL_STATES['current_callsign']:
@@ -772,7 +772,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 return
             
             if not validate_callsign(data):
-                logging.warning('This callsign is probably not a valid callsign!')
+                logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] This callsign is probably not a valid callsign!')
                 return
 
             logging.info(
@@ -847,7 +847,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     return
 
                 if not validate_callsign(data):
-                    logging.warning('This callsign is probably not a valid callsign!')
+                    logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] This callsign is probably not a valid callsign!')
                     return
 
                 logging.info(
@@ -924,14 +924,14 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     return
                 
                 if data['to'] in receiver_exc:
-                    logging.warning('The Callsign is calling someone that is blacklisted!')
+                    logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] The Callsign is calling someone that is blacklisted!')
                     return
 
                 if not filter_cq(data, states):
                     return
 
                 if not validate_callsign(data):
-                    logging.warning('This callsign is probably not a valid callsign!')
+                    logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] This callsign is probably not a valid callsign!')
                     return
 
                 logging.info(
@@ -1005,14 +1005,14 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     return
 
                 if data['to'] in receiver_exc:
-                    logging.warning('The Callsign is calling someone that is blacklisted!')
+                    logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] The Callsign is calling someone that is blacklisted!')
                     return
 
                 if not filter_cq(data, states):
                     return
 
                 if not validate_callsign(data):
-                    logging.warning('This callsign is probably not a valid callsign!')
+                    logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] This callsign is probably not a valid callsign!')
                     return
 
                 logging.info(
@@ -1086,14 +1086,14 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     return
 
                 if data['to'] in receiver_exc:
-                    logging.warning('The Callsign is calling someone that is blacklisted!')
+                    logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] The Callsign is calling someone that is blacklisted!')
                     return
 
                 if not filter_cq(data, states):
                     return
 
                 if not validate_callsign(data):
-                    logging.warning('This callsign is probably not a valid callsign!')
+                    logging.warning(f'[HOST: {ip_from[0]}:{ip_from[1]}] This callsign is probably not a valid callsign!')
                     return
 
                 logging.info(
