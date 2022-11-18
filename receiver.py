@@ -298,6 +298,14 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     },
                     {'$set': {'expired': True}}
                 )
+            if RELEASE_FROM_SPAM_TIME:
+                call_coll.update_many(
+                    {
+                        'timestamp': {'$lte': now-RELEASE_FROM_SPAM_TIME+TIMING[current_mode]['half']+2}, 
+                        'isSpam': True
+                    },
+                    {'$set': {'isSpam': False}}
+                )
             if CALLSIGN_EXCEPTION:
                 try:
                     with open(CALLSIGN_EXCEPTION) as f:
