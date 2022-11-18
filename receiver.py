@@ -273,7 +273,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
         current_band: int = freq_to_band(packet.Frequency//1000)['band']
         current_mode = packet.Mode
         packet_last_tx = packet.LastTxMsg or ''
-        isTransmitting = packet.Transmitting and LOCAL_STATES['current_tx'] != packet_last_tx
+        isTransmitting = packet.Transmitting and (LOCAL_STATES['current_tx'] != packet_last_tx or states_list['transmitting'] != packet.Transmitting)
         isDoneTransmitting = not packet.Transmitting and states_list['transmitting'] != packet.Transmitting
         isChangingBand = latest_band != 0 and latest_band != current_band
         isChangingMode = latest_mode != '' and latest_mode != current_mode
