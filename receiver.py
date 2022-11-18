@@ -627,6 +627,17 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                             upsert=True
                         )
                         return
+                    elif latest_data['isSpam']:
+                        logging.info(
+                            f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
+                            f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
+                        )
+                        call_coll.update_one(
+                            {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
+                            {'$set': latest_data},
+                            upsert=True
+                        )
+                        return
 
             if not filter_cq(data, states):
                 return
@@ -677,6 +688,17 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                                 latest_data['tried'] = False
                                 latest_data['timestamp'] = data['timestamp']
                                 latest_data['isReemerging'] = True
+                            logging.info(
+                                f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
+                                f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
+                            )
+                            call_coll.update_one(
+                                {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
+                                {'$set': latest_data},
+                                upsert=True
+                            )
+                            return
+                        elif latest_data['isSpam']:
                             logging.info(
                                 f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
                                 f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
@@ -739,6 +761,17 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                                 latest_data['tried'] = False
                                 latest_data['timestamp'] = data['timestamp']
                                 latest_data['isReemerging'] = True
+                            logging.info(
+                                f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
+                                f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
+                            )
+                            call_coll.update_one(
+                                {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
+                                {'$set': latest_data},
+                                upsert=True
+                            )
+                            return
+                        elif latest_data['isSpam']:
                             logging.info(
                                 f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
                                 f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
@@ -815,6 +848,17 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                                 upsert=True
                             )
                             return
+                        elif latest_data['isSpam']:
+                            logging.info(
+                                f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
+                                f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
+                            )
+                            call_coll.update_one(
+                                {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
+                                {'$set': latest_data},
+                                upsert=True
+                            )
+                            return
 
                 if not states_list['num_tries_call_busy']:
                     return
@@ -871,6 +915,17 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                                 latest_data['tried'] = False
                                 latest_data['timestamp'] = data['timestamp']
                                 latest_data['isReemerging'] = True
+                            logging.info(
+                                f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
+                                f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
+                            )
+                            call_coll.update_one(
+                                {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
+                                {'$set': latest_data},
+                                upsert=True
+                            )
+                            return
+                        elif latest_data['isSpam']:
                             logging.info(
                                 f'[DB] [MODE: {latest_data["mode"]}] [BAND: {latest_data["band"]}] '
                                 f'[CALLSIGN: {latest_data["callsign"]}] Adding back {latest_data["Message"]}'
