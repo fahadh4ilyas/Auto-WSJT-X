@@ -418,7 +418,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                             {'$set': {'tried': True}}
                         )
 
-                    if states_list['num_inactive_before_cut'] and states_list['inactive_count'] > states_list['num_inactive_before_cut']:
+                    num_inactive_before_cut = result.get('num_inactive_before_cut', states_list['num_inactive_before_cut'])
+                    if num_inactive_before_cut and states_list['inactive_count'] > num_inactive_before_cut:
                         states.change_states(
                             tries = 0,
                             inactive_count = 0
@@ -433,7 +434,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                             {'$set': {'expired': True}}
                         )
                     
-                    if states_list['transmit_counter'] >= 2*states_list['max_tries']:
+                    if states_list['transmit_counter'] >= result.get('max_transmit_count', 2*states_list['max_tries']):
                         states.change_states(
                             tries = 0,
                             inactive_count = 0,
@@ -576,7 +577,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             'band',
             'mode',
             'num_inactive_before_cut',
-            'num_tries_call_busy'
+            'num_tries_call_busy',
+            'max_tries'
         )
 
         if MIN_FREQUENCY <= packet.DeltaFrequency <= MAX_FREQUENCY:
@@ -610,7 +612,9 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
         additional_data = {
             'band': states_list['band'],
-            'mode': states_list['mode']
+            'mode': states_list['mode'],
+            'max_transmit_count': 2*states_list['max_tries'],
+            'num_inactive_before_cut': states_list['num_inactive_before_cut']
         }
         completing_data(
             data,
