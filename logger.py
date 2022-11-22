@@ -40,7 +40,7 @@ def process_wsjt(_data: bytes, ip_from: tuple):
 
         logging.debug(f'[HOST: {ip_from[0]}:{ip_from[1]}] {packet}')
         packet_last_tx = packet.LastTxMsg or ''
-        isTransmitting = packet.Transmitting and LOCAL_STATES['current_tx'] != packet_last_tx
+        isTransmitting = packet.Transmitting and (LOCAL_STATES['current_tx'] != packet_last_tx or LOCAL_STATES['transmitting'] != packet.Transmitting)
 
         LOCAL_STATES['transmitting'] = packet.Transmitting
         LOCAL_STATES['current_tx'] = packet_last_tx 
