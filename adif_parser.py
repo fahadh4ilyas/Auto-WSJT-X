@@ -19,7 +19,7 @@ with open('data/countrytodxcc.json') as f:
 mongo_client = MongoClient(MONGO_HOST, MONGO_PORT)
 
 db = mongo_client.wsjt
-done_coll = db.black
+done_coll = db[f'black_{QRZ_USERNAME}']
 
 def string_band_to_number(band: str) -> typing.Union[float, int]:
     if 'mm' in band.lower():
