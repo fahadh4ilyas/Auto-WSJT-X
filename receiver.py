@@ -853,7 +853,10 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     f'[DB] [MODE: {data["mode"]}] [BAND: {data["band"]}] '
                     f'[CALLSIGN: {data["callsign"]}] Adding {data["Message"]}'
                 )
-                data['importance'] = 1 + priority_country.get(data['country'], 0)
+                if GRID_HIGHER_THAN_CQ:
+                    data['importance'] = 1.5 + priority_country.get(data['country'], 0)
+                else:
+                    data['importance'] = 1 + priority_country.get(data['country'], 0)
                 data['tries'] = states_list['num_tries_call_busy']
                 data['tried'] = latest_data.get('tried', False)
                 if latest_data and latest_data['nextTx'] == data['nextTx']:

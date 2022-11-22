@@ -39,6 +39,10 @@ NEW_GRID = True
 # restart receiver + transmitter
 NEW_DXCC = True
 
+# Set to True to make grid message higher importance than CQ
+# restart receiver + transmitter
+GRID_HIGHER_THAN_CQ = True
+
 # Set to True to validate callsign first before adding to queue
 # restart receiver + transmitter
 VALIDATE_CALLSIGN = True
