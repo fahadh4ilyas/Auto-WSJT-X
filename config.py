@@ -106,6 +106,29 @@ DXCC_EXCEPTION = [
 # restart receiver + transmitter
 DXCC_PRIORITY = os.path.join(CURRENT_DIR, 'data', 'priority_list.txt')
 
+# List of VIP DXCC
+# restart receiver + transmitter
+DXCC_VIP = os.path.join(CURRENT_DIR, 'data', 'vip_list.txt')
+
+# Number of inactive time of callsign before stop replying
+# This is for VIP DXCC
+# Set to 0 to disable this feature
+# MUST BE LESS THAN MAX_TRIES
+# restart receiver + transmitter
+NUM_INACTIVE_BEFORE_CUT_VIP = 0
+
+# Default max number of tries to reply callsign the same message
+# This is for VIP DXCC
+# restart receiver + transmitter
+MAX_TRIES_VIP = 3
+
+# Number of tries calling busy callsign
+# This is for VIP DXCC
+# Minimum must be set to 0
+# Maximum is 2 * MAX_TRIES - 1
+# restart receiver + transmitter
+NUM_TRIES_CALL_BUSY_VIP = 2
+
 # Will change frequency every this number of time
 # Set to 1 will always to change frequency every transmit
 # restart transmitter
@@ -155,8 +178,14 @@ TIMING = {
 }
 
 if NUM_INACTIVE_BEFORE_CUT >= MAX_TRIES:
-    raise ValueError('MIN_INACTIVE_BEFORE_CUT MUST BE LESS THAN MAX_TRIES')
+    raise ValueError('MIN_INACTIVE_BEFORE_CUT must be less than MAX_TRIES')
 
 if not (0 <= NUM_TRIES_CALL_BUSY < 2*MAX_TRIES):
     raise ValueError('NUM_TRIES_CALL_BUSY must be less than 2 * MAX_TRIES')
+
+if NUM_INACTIVE_BEFORE_CUT_VIP >= MAX_TRIES_VIP:
+    raise ValueError('MIN_INACTIVE_BEFORE_CUT_VIP must be less than MAX_TRIES_VIP')
+
+if not (0 <= NUM_TRIES_CALL_BUSY_VIP < 2*MAX_TRIES_VIP):
+    raise ValueError('NUM_TRIES_CALL_BUSY_VIP must be less than 2 * MAX_TRIES_VIP')
 # #########################################################################

@@ -41,17 +41,24 @@ if VALID_CALLSIGN_LOCATION:
     except:
         pass
 
-with open(DXCC_PRIORITY) as f:
-    priority_country_list = f.read().splitlines()
-    length_priority_country_list = len(priority_country_list)
-    priority_country = dict(
-        [
-            (
-                d,
-                0.5-i/(2*length_priority_country_list+1)
-            ) for i,d in enumerate(priority_country_list, start=1)
-        ]
-    )
+priority_country = {}
+if DXCC_PRIORITY:
+    with open(DXCC_PRIORITY) as f:
+        priority_country_list = f.read().splitlines()
+        length_priority_country_list = len(priority_country_list)
+        priority_country = dict(
+            [
+                (
+                    d,
+                    0.5-i/(2*length_priority_country_list+1)
+                ) for i,d in enumerate(priority_country_list, start=1)
+            ]
+        )
+
+vip_dxcc = []
+if DXCC_VIP:
+    with open(DXCC_VIP) as f:
+        vip_dxcc = f.read().splitlines()
 
 LOCAL_STATES = {
     'my_callsign': '',
@@ -194,6 +201,7 @@ def get_grid_data(
     return data
 
 def completing_data(data: dict, additional_data: dict, now: float = None, latest_data: dict = {}) -> dict:
+    global vip_dxcc
 
     location_data = get_location_data(data['prefixed_callsign'], latest_data)
     if location_data:
@@ -231,6 +239,7 @@ def completing_data(data: dict, additional_data: dict, now: float = None, latest
             'mode': data['mode']
         }
     ))
+    data['isVIPDXCC'] = data.get('country', None) in vip_dxcc
     data['timestamp'] = now or datetime.now().timestamp()
     
     return data
@@ -639,6 +648,11 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             logging.warning('The Callsign\'s country is not found')
             return
 
+        if data['isVIPDXCC']:
+            data['tries'] = MAX_TRIES_VIP
+            data['max_transmit_count'] = 2*MAX_TRIES_VIP
+            data['num_inactive_before_cut'] = NUM_INACTIVE_BEFORE_CUT_VIP
+
         if states_list['num_inactive_before_cut'] and data['callsign'] == LOCAL_STATES['current_callsign']:
             states.inactive_count = 0
 
@@ -858,6 +872,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 else:
                     data['importance'] = 1 + priority_country.get(data['country'], 0)
                 data['tries'] = states_list['num_tries_call_busy']
+                if data['isVIPDXCC']:
+                    data['tries'] = NUM_TRIES_CALL_BUSY_VIP
                 data['tried'] = latest_data.get('tried', False)
                 if latest_data and latest_data['nextTx'] == data['nextTx']:
                     data['isSpam'] = latest_data.get('isSpam', False)
@@ -939,6 +955,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 )
                 data['importance'] = 1 + priority_country.get(data['country'], 0)
                 data['tries'] = states_list['num_tries_call_busy']
+                if data['isVIPDXCC']:
+                    data['tries'] = NUM_TRIES_CALL_BUSY_VIP
                 data['tried'] = latest_data.get('tried', False)
                 if latest_data and latest_data['nextTx'] == data['nextTx']:
                     data['isSpam'] = latest_data.get('isSpam', False)
@@ -1020,6 +1038,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 )
                 data['importance'] = 1 + priority_country.get(data['country'], 0)
                 data['tries'] = states_list['num_tries_call_busy']
+                if data['isVIPDXCC']:
+                    data['tries'] = NUM_TRIES_CALL_BUSY_VIP
                 data['tried'] = latest_data.get('tried', False)
                 if latest_data and latest_data['nextTx'] == data['nextTx']:
                     data['isSpam'] = latest_data.get('isSpam', False)
