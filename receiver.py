@@ -41,17 +41,24 @@ if VALID_CALLSIGN_LOCATION:
     except:
         pass
 
-with open(DXCC_PRIORITY) as f:
-    priority_country_list = f.read().splitlines()
-    length_priority_country_list = len(priority_country_list)
-    priority_country = dict(
-        [
-            (
-                d,
-                0.5-i/(2*length_priority_country_list+1)
-            ) for i,d in enumerate(priority_country_list, start=1)
-        ]
-    )
+priority_country = {}
+if DXCC_PRIORITY:
+    with open(DXCC_PRIORITY) as f:
+        priority_country_list = f.read().splitlines()
+        length_priority_country_list = len(priority_country_list)
+        priority_country = dict(
+            [
+                (
+                    d,
+                    0.5-i/(2*length_priority_country_list+1)
+                ) for i,d in enumerate(priority_country_list, start=1)
+            ]
+        )
+
+vip_dxcc = []
+if DXCC_VIP:
+    with open(DXCC_VIP) as f:
+        vip_dxcc = f.read().splitlines()
 
 LOCAL_STATES = {
     'my_callsign': '',
@@ -195,6 +202,7 @@ def get_grid_data(
     return data
 
 def completing_data(data: dict, additional_data: dict, now: float = None, latest_data: dict = {}) -> dict:
+    global vip_dxcc
 
     location_data = get_location_data(data['prefixed_callsign'], latest_data)
     if location_data:
@@ -232,6 +240,7 @@ def completing_data(data: dict, additional_data: dict, now: float = None, latest
             'mode': data['mode']
         }
     ))
+    data['isVIPDXCC'] = data.get('country', None) in vip_dxcc
     data['timestamp'] = now or datetime.now().timestamp()
     
     return data
@@ -447,7 +456,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                             {'$set': {'tried': True}}
                         )
 
-                    if states_list['num_inactive_before_cut'] and states_list['inactive_count'] > states_list['num_inactive_before_cut']:
+                    num_inactive_before_cut = result.get('num_inactive_before_cut', states_list['num_inactive_before_cut'])
+                    if num_inactive_before_cut and states_list['inactive_count'] > num_inactive_before_cut:
                         states.change_states(
                             tries = 0,
                             inactive_count = 0
@@ -462,7 +472,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                             {'$set': {'expired': True}}
                         )
                     
-                    if states_list['transmit_counter'] >= 2*states_list['max_tries']:
+                    if states_list['transmit_counter'] >= result.get('max_transmit_count', 2*states_list['max_tries']):
                         states.change_states(
                             tries = 0,
                             inactive_count = 0,
@@ -605,7 +615,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             'band',
             'mode',
             'num_inactive_before_cut',
-            'num_tries_call_busy'
+            'num_tries_call_busy',
+            'max_tries'
         )
 
         if MIN_FREQUENCY <= packet.DeltaFrequency <= MAX_FREQUENCY:
@@ -639,7 +650,9 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
         additional_data = {
             'band': states_list['band'],
-            'mode': states_list['mode']
+            'mode': states_list['mode'],
+            'max_transmit_count': 2*states_list['max_tries'],
+            'num_inactive_before_cut': states_list['num_inactive_before_cut']
         }
         completing_data(
             data,
@@ -663,6 +676,11 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
         if 'country' not in data:
             logging.warning('The Callsign\'s country is not found')
             return
+
+        if data['isVIPDXCC']:
+            data['tries'] = MAX_TRIES_VIP
+            data['max_transmit_count'] = 2*MAX_TRIES_VIP
+            data['num_inactive_before_cut'] = NUM_INACTIVE_BEFORE_CUT_VIP
 
         if states_list['num_inactive_before_cut'] and data['callsign'] == LOCAL_STATES['current_callsign']:
             states.inactive_count = 0
@@ -878,8 +896,13 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     f'[DB] [MODE: {data["mode"]}] [BAND: {data["band"]}] '
                     f'[CALLSIGN: {data["callsign"]}] Adding {data["Message"]}'
                 )
-                data['importance'] = 1 + priority_country.get(data['country'], 0)
+                if GRID_HIGHER_THAN_CQ:
+                    data['importance'] = 1.5 + priority_country.get(data['country'], 0)
+                else:
+                    data['importance'] = 1 + priority_country.get(data['country'], 0)
                 data['tries'] = states_list['num_tries_call_busy']
+                if data['isVIPDXCC']:
+                    data['tries'] = NUM_TRIES_CALL_BUSY_VIP
                 data['tried'] = latest_data.get('tried', False)
                 if latest_data and latest_data['nextTx'] == data['nextTx']:
                     data['isSpam'] = latest_data.get('isSpam', False)
@@ -961,6 +984,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 )
                 data['importance'] = 1 + priority_country.get(data['country'], 0)
                 data['tries'] = states_list['num_tries_call_busy']
+                if data['isVIPDXCC']:
+                    data['tries'] = NUM_TRIES_CALL_BUSY_VIP
                 data['tried'] = latest_data.get('tried', False)
                 if latest_data and latest_data['nextTx'] == data['nextTx']:
                     data['isSpam'] = latest_data.get('isSpam', False)
@@ -1042,6 +1067,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 )
                 data['importance'] = 1 + priority_country.get(data['country'], 0)
                 data['tries'] = states_list['num_tries_call_busy']
+                if data['isVIPDXCC']:
+                    data['tries'] = NUM_TRIES_CALL_BUSY_VIP
                 data['tried'] = latest_data.get('tried', False)
                 if latest_data and latest_data['nextTx'] == data['nextTx']:
                     data['isSpam'] = latest_data.get('isSpam', False)
