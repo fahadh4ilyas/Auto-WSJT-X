@@ -2,6 +2,7 @@ import json, adif_io, requests, re, typing
 from pyhamtools import LookupLib, Callinfo
 from pyhamtools.frequency import freq_to_band
 from tqdm import tqdm
+from datetime import datetime
 
 from pymongo import MongoClient
 from config import LOG_LOCATION, MONGO_HOST, MONGO_PORT, QRZ_API_KEY, QRZ_PASSWORD, QRZ_USERNAME, WORK_ON_UNCONFIRMED_QSO
@@ -66,6 +67,8 @@ def main(data_str: str):
             continue
 
         inserted_data = {
+            'QSOID': f'{d["QSO_DATE"]}{d["TIME_ON"][:4]}-{d["QSO_DATE_OFF"]}{d["TIME_OFF"][:4]}',
+            'timestamp': datetime.strptime(f'{d["QSO_DATE_OFF"]}{d["TIME_OFF"][:4]}+0000', '%Y%m%d%H%M%z').timestamp(),
             'callsign': d['CALL'].replace('_', '/'),
             'mode': d.get('MODE', 'FT8'),
             'confirmed': confirmed
@@ -121,11 +124,15 @@ def main(data_str: str):
             inserted_data['dxcc'] = int(d['DXCC'])
         elif inserted_data['country'] and inserted_data['country'] in country_to_dxcc:
             inserted_data['dxcc'] = country_to_dxcc[inserted_data['country']]
-
-        if 'DISTANCE' in d:
-            inserted_data['distance'] = float(d['DISTANCE'])
         
-        done_coll.update_one({'callsign': inserted_data['callsign'], 'band': inserted_data['band'], 'confirmed': False}, {'$set': inserted_data}, upsert=True)
+        done_coll.update_one({
+            'callsign': inserted_data['callsign'],
+            'band': inserted_data['band'],
+            'QSOID': inserted_data['QSOID']
+            },
+            {'$set': inserted_data},
+            upsert=True
+        )
 
 if __name__ == '__main__':
     print('Starting...')

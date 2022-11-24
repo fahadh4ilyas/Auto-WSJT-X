@@ -7,7 +7,7 @@ from pyhamtools.frequency import freq_to_band
 
 from states import States
 from config import *
-from adif_parser import main as adif_parser, db, done_coll, call_info, call_info2, country_to_dxcc
+from adif_parser import main as adif_parser, db, done_coll, call_info, call_info2, country_to_dxcc, adif_io
 import logging
 from logging import handlers
 
@@ -488,48 +488,45 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                             f'[DB] [MODE: {current_mode}] [BAND: {current_band}] '
                             f'[CALLSIGN: {matched["to"]}] Removing {current_data["Message"]}'
                         )
-                if not current_data:
-                    current_data['callsign'] = matched['to']
-                current_data.update({
-                    'confirmed': True,
-                    'logScript': True,
-                    'fromScript': True,
-                    'timestamp': now,
-                    'callsign': matched['to'],
-                    'prefixed_callsign': matched['prefixed_to'],
-                    'band': current_band,
-                    'mode': current_mode
-                })
-                location_data = get_location_data(current_data['prefixed_callsign'], current_data)
-                if 'country' not in current_data  and all([i in location_data for i in ['country', 'dxcc', 'continent']]):
-                    current_data.update({
-                        k: location_data[k] for k in ['country', 'dxcc', 'continent']
+                if not qso_data:
+                    blacklist_data = {}
+                    blacklist_data.update({
+                        'confirmed': True,
+                        'logScript': True,
+                        'fromScript': True,
+                        'timestamp': now,
+                        'callsign': matched['to'],
+                        'band': current_band,
+                        'mode': current_mode
                     })
-                grid_data = get_grid_data(
-                    current_data['callsign'],
-                    current_data.get('grid', None),
-                    location_data,
-                    current_data
-                )
-                current_data.update(grid_data)
-                if current_data.get('grid', None) is None:
-                    current_data.pop('grid')
-                if call_info2 and current_data.get('country', None) == 'United States' and 'state' not in current_data:
-                    if 'state' in qso_data:
-                        current_data.update(
-                            {
-                                k:qso_data[k] for k in ['state', 'county']
-                            }
-                        )
-                    else:
-                        state_data = get_state_data(current_data['callsign'])
-                        current_data.update(state_data)
-                current_data.pop('_id', None)
-                done_coll.update_one(
-                    {'callsign': matched['to'], 'band': current_band, 'mode': current_mode},
-                    {'$set': current_data},
-                    upsert=True
-                )
+                    location_data = get_location_data(current_data.get('prefixed_callsign', matched['prefixed_to']), current_data)
+                    if all([i in location_data for i in ['country', 'dxcc', 'continent']]):
+                        blacklist_data.update({
+                            k: location_data[k] for k in ['country', 'dxcc', 'continent']
+                        })
+                    grid_data = get_grid_data(
+                        current_data.get('callsign', matched['to']),
+                        current_data.get('grid', None),
+                        location_data,
+                        current_data
+                    )
+                    blacklist_data.update(grid_data)
+                    if current_data.get('grid', None) is None:
+                        current_data.pop('grid')
+                    if call_info2 and current_data.get('country', None) == 'United States':
+                        if all([i in current_data for i in ['state', 'county']]):
+                            blacklist_data.update({
+                                'state': current_data['state'],
+                                'county': current_data['county']
+                            })
+                        else:
+                            state_data = get_state_data(current_data.get('callsign', matched['to']))
+                            blacklist_data.update(state_data)
+                    done_coll.insert_one(blacklist_data)
+                    logging.info(
+                        f'[DB] [MODE: {current_mode}] [BAND: {current_band}] '
+                        f'[CALLSIGN: {matched["to"]}] Inserting to blacklist {LOCAL_STATES["current_tx"]}'
+                    )
             
             if matched.get('type', None) == 'R73' and not (states.transmitter_started and matched['R73'] != '73'):
                 result = call_coll.find_one_and_delete(
@@ -1099,6 +1096,25 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
     elif isinstance(packet, wsjtx.WSADIF):
         logging.info(f'LOGGED ADIF: {packet.ADIF}')
+        t = adif_io.read_from_string(packet.ADIF)
+
+        result_data, _ = typing.cast(
+            typing.Tuple[
+                typing.List[typing.Dict[str, typing.Any]],
+                typing.Dict[str, typing.Any]
+            ],
+            t
+        )
+        logged_data = result_data[0]
+        states_list = states.get_states(
+            'band',
+            'mode'
+        )
+
+        done_coll.update_one(
+            {'callsign': logged_data['CALL'], 'logScript': True, **states_list},
+            {'$set': {'QSOID': f'{logged_data["QSO_DATE"]}{logged_data["TIME_ON"][:4]}-{logged_data["QSO_DATE_OFF"]}{logged_data["TIME_OFF"][:4]}'}}
+        )
 
     elif isinstance(packet, wsjtx.WSClose):
         logging.warning(packet)
@@ -1111,6 +1127,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 def init(sock: socket.socket, states: States):
 
     logging.info('Initializing...')
+    now = datetime.now().timestamp()
     states.r.flushdb()
     states.new_grid = NEW_GRID
     states.new_dxcc = NEW_DXCC
@@ -1121,7 +1138,7 @@ def init(sock: socket.socket, states: States):
     states.num_disable_transmit = NUM_DISABLE_TRANSMIT
     states.max_tries = MAX_TRIES
 
-    done_coll.update_many({'logScript': True}, {'$unset': {'logScript': ''}})
+    done_coll.update_many({'logScript': True, 'timestamp': {'$lte': now - 15*60}}, {'$unset': {'logScript': ''}})
 
     if QRZ_API_KEY:
         logging.info('Checking QRZ Logbook...')
