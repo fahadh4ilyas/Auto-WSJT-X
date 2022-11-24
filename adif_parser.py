@@ -61,8 +61,7 @@ def read_from_string(adif_bytes: typing.Union[bytes, str]):
     
     qsos: typing.List[typing.Dict[str, typing.Any]] = []
     cursor = 0
-    header_field_mo = re.search(b'<eoh>', adif_bytes, re.IGNORECASE)
-    if adif_bytes[0] != b'<'[0] or header_field_mo:
+    if adif_bytes[0] != b'<'[0] or re.search(b'<eoh>', adif_bytes, re.IGNORECASE):
         # Input has ADIF header. Read all header fields.
         eoh_found = False
         while(not eoh_found):
