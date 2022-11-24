@@ -469,7 +469,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
             if not isSameMessage and matched.get('type', None) == 'R73':
                 qso_data = done_coll.find_one(
-                    {'callsign': matched['to'], 'band': current_band, 'mode': current_mode}
+                    {'callsign': matched['to'], 'band': current_band, 'mode': current_mode, 'logScript': True}
                 ) or {}
                 if not qso_data:
                     logging.info(f'Logging QSO: {matched["to"]} at band {current_band} in mode {current_mode}')
@@ -492,6 +492,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     current_data['callsign'] = matched['to']
                 current_data.update({
                     'confirmed': True,
+                    'logScript': True,
                     'fromScript': True,
                     'timestamp': now,
                     'callsign': matched['to'],
@@ -1119,6 +1120,8 @@ def init(sock: socket.socket, states: States):
     states.num_tries_call_busy = NUM_TRIES_CALL_BUSY
     states.num_disable_transmit = NUM_DISABLE_TRANSMIT
     states.max_tries = MAX_TRIES
+
+    done_coll.update_many({'logScript': True}, {'$unset': {'logScript': ''}})
 
     if QRZ_API_KEY:
         logging.info('Checking QRZ Logbook...')
