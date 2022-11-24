@@ -7,7 +7,7 @@ from pyhamtools.frequency import freq_to_band
 
 from states import States
 from config import *
-from adif_parser import main as adif_parser, db, done_coll, call_info, call_info2, country_to_dxcc
+from adif_parser import main as adif_parser, db, done_coll, call_info, call_info2, country_to_dxcc, adif_io
 import logging
 from logging import handlers
 
@@ -1052,6 +1052,25 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
     elif isinstance(packet, wsjtx.WSADIF):
         logging.info(f'LOGGED ADIF: {packet.ADIF}')
+        t = adif_io.read_from_string(packet.ADIF)
+
+        result_data, _ = typing.cast(
+            typing.Tuple[
+                typing.List[typing.Dict[str, typing.Any]],
+                typing.Dict[str, typing.Any]
+            ],
+            t
+        )
+        logged_data = result_data[0]
+        states_list = states.get_states(
+            'band',
+            'mode'
+        )
+
+        done_coll.update_one(
+            {'callsign': logged_data['CALL'], 'logScript': True, **states_list},
+            {'$set': {'QSOID': f'{logged_data["QSO_DATE"]}{logged_data["TIME_ON"][:4]}-{logged_data["QSO_DATE_OFF"]}{logged_data["TIME_OFF"][:4]}'}}
+        )
 
     elif isinstance(packet, wsjtx.WSClose):
         logging.warning(packet)

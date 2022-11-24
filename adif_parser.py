@@ -66,6 +66,7 @@ def main(data_str: str):
             continue
 
         inserted_data = {
+            'QSOID': f'{d["QSO_DATE"]}{d["TIME_ON"][:4]}-{d["QSO_DATE_OFF"]}{d["TIME_OFF"][:4]}',
             'callsign': d['CALL'].replace('_', '/'),
             'mode': d.get('MODE', 'FT8'),
             'confirmed': confirmed
@@ -125,7 +126,14 @@ def main(data_str: str):
         if 'DISTANCE' in d:
             inserted_data['distance'] = float(d['DISTANCE'])
         
-        done_coll.update_one({'callsign': inserted_data['callsign'], 'band': inserted_data['band'], 'confirmed': False}, {'$set': inserted_data}, upsert=True)
+        done_coll.update_one({
+            'callsign': inserted_data['callsign'],
+            'band': inserted_data['band'],
+            'QSOID': inserted_data['QSOID']
+            },
+            {'$set': inserted_data},
+            upsert=True
+        )
 
 if __name__ == '__main__':
     print('Starting...')
