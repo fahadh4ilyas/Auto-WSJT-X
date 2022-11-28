@@ -510,9 +510,9 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                         current_data
                     )
                     blacklist_data.update(grid_data)
-                    if current_data.get('grid', None) is None:
-                        current_data.pop('grid')
-                    if call_info2 and current_data.get('country', None) == 'United States':
+                    if blacklist_data.get('grid', None) is None:
+                        blacklist_data.pop('grid')
+                    if call_info2 and blacklist_data.get('country', None) == 'United States':
                         if all([i in current_data for i in ['state', 'county']]):
                             blacklist_data.update({
                                 'state': current_data['state'],
