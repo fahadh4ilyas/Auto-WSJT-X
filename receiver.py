@@ -521,8 +521,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 if states.transmitter_started and matched['R73'] != '73':
                     result = call_coll.find_one(
                         {'callsign': matched['to'], 'band': current_band, 'mode': current_mode}
-                    )
-                    if 3 <= result['importance'] < 3.5:
+                    ) or {}
+                    if result and 3 <= result['importance'] < 3.5:
                         importance: float = result['importance']/2 + 1.25
                         call_coll.update_one(
                             {'callsign': matched['to'], 'band': current_band, 'mode': current_mode},
