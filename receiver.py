@@ -804,7 +804,10 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     f'[DB] [MODE: {data["mode"]}] [BAND: {data["band"]}] '
                     f'[CALLSIGN: {data["callsign"]}] Adding {data["Message"]}'
                 )
-                data['importance'] = 1 + priority_country.get(data['country'], 0)
+                if GRID_HIGHER_THAN_CQ:
+                    data['importance'] = 1.5 + priority_country.get(data['country'], 0)
+                else:
+                    data['importance'] = 1 + priority_country.get(data['country'], 0)
                 if latest_data and latest_data['nextTx'] == data['nextTx']:
                     data['isSpam'] = latest_data.get('isSpam', False)
                 call_coll.update_one(
@@ -866,10 +869,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     f'[DB] [MODE: {data["mode"]}] [BAND: {data["band"]}] '
                     f'[CALLSIGN: {data["callsign"]}] Adding {data["Message"]}'
                 )
-                if GRID_HIGHER_THAN_CQ:
-                    data['importance'] = 1.5 + priority_country.get(data['country'], 0)
-                else:
-                    data['importance'] = 1 + priority_country.get(data['country'], 0)
+                data['importance'] = 1 + priority_country.get(data['country'], 0)
                 data['tries'] = states_list['num_tries_call_busy']
                 if data['isVIPDXCC']:
                     data['tries'] = NUM_TRIES_CALL_BUSY_VIP
