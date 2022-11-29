@@ -20,6 +20,8 @@ if CALLSIGN_EXCEPTION:
     try:
         with open(CALLSIGN_EXCEPTION) as f:
             callsign_exc = f.read().splitlines()
+    except KeyboardInterrupt as e:
+        raise e
     except:
         pass
 
@@ -28,6 +30,8 @@ if RECEIVER_EXCEPTION:
     try:
         with open(RECEIVER_EXCEPTION) as f:
             receiver_exc = f.read().splitlines()
+    except KeyboardInterrupt as e:
+        raise e
     except:
         pass
 
@@ -38,6 +42,8 @@ if VALID_CALLSIGN_LOCATION:
             data = csv.reader(f)
             for r in data:
                 valid_callsign.append(r[0])
+    except KeyboardInterrupt as e:
+        raise e
     except:
         pass
 
@@ -174,6 +180,8 @@ def get_location_data(callsign: str, latest_data: dict = {}) -> dict:
     try:
         location_data = call_info.get_all(callsign)
         location_data['dxcc'] = country_to_dxcc.get(location_data['country'], 0)
+    except KeyboardInterrupt as e:
+        raise e
     except:
         location_data = {}
     
@@ -254,6 +262,8 @@ def get_state_data(callsign: str) -> dict:
                 data['state'] = state_data['state']
             if 'county' in state_data:
                 data['county'] = state_data['county']
+        except KeyboardInterrupt as e:
+            raise e
         except:
             pass
     
@@ -272,6 +282,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
     try:
         packet = wsjtx.ft8_decode(_data)
+    except KeyboardInterrupt as e:
+        raise e
     except (IOError, NotImplementedError):
         logging.exception('Something not right!')
         return
@@ -351,12 +363,16 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 try:
                     with open(CALLSIGN_EXCEPTION) as f:
                         callsign_exc = f.read().splitlines()
+                except KeyboardInterrupt as e:
+                    raise e
                 except:
                     pass
             if RECEIVER_EXCEPTION:
                 try:
                     with open(RECEIVER_EXCEPTION) as f:
                         receiver_exc = f.read().splitlines()
+                except KeyboardInterrupt as e:
+                    raise e
                 except:
                     pass
             states.even_frequencies = [MIN_FREQUENCY, MAX_FREQUENCY]
