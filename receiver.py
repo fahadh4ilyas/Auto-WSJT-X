@@ -473,20 +473,10 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 if not qso_data:
                     logging.info(f'Logging QSO: {matched["to"]} at band {current_band} in mode {current_mode}')
                     states.log_qso()
-                if states.transmitter_started and matched['R73'] != '73':
-                    current_data = call_coll.find_one_and_update(
-                        {'callsign': matched['to'], 'band': current_band, 'mode': current_mode},
-                        {'$set': {'isNewCallsign': False, 'isNewDXCC': False}}
-                    ) or {}
-                else:
-                    current_data = call_coll.find_one_and_delete(
-                        {'callsign': matched['to'], 'band': current_band, 'mode': current_mode}
-                    ) or {}
-                    if current_data:
-                        logging.warning(
-                            f'[DB] [MODE: {current_mode}] [BAND: {current_band}] '
-                            f'[CALLSIGN: {matched["to"]}] Removing {current_data["Message"]}'
-                        )
+                current_data = call_coll.find_one_and_update(
+                    {'callsign': matched['to'], 'band': current_band, 'mode': current_mode},
+                    {'$set': {'isNewCallsign': False, 'isNewDXCC': False}}
+                ) or {}
                 if not qso_data:
                     blacklist_data = {}
                     blacklist_data.update({
@@ -527,15 +517,26 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                         f'[CALLSIGN: {matched["to"]}] Inserting to blacklist {LOCAL_STATES["current_tx"]}'
                     )
             
-            if matched.get('type', None) == 'R73' and not (states.transmitter_started and matched['R73'] != '73'):
-                result = call_coll.find_one_and_delete(
-                    {'callsign': matched['to'], 'band': current_band, 'mode': current_mode}
-                )
-                if result:
-                    logging.warning(
-                        f'[DB] [MODE: {current_mode}] [BAND: {current_band}] '
-                        f'[CALLSIGN: {matched["to"]}] Removing {result["Message"]}'
+            if matched.get('type', None) == 'R73':
+                if states.transmitter_started and matched['R73'] != '73':
+                    result = call_coll.find_one(
+                        {'callsign': matched['to'], 'band': current_band, 'mode': current_mode}
                     )
+                    if 3 <= result['importance'] < 3.5:
+                        importance: float = result['importance']/2 + 1.25
+                        call_coll.update_one(
+                            {'callsign': matched['to'], 'band': current_band, 'mode': current_mode},
+                            {'$set': {'importance': importance}}
+                        )
+                else:
+                    result = call_coll.find_one_and_delete(
+                        {'callsign': matched['to'], 'band': current_band, 'mode': current_mode}
+                    )
+                    if result:
+                        logging.warning(
+                            f'[DB] [MODE: {current_mode}] [BAND: {current_band}] '
+                            f'[CALLSIGN: {matched["to"]}] Removing {result["Message"]}'
+                        )
             
             states_list = states.get_states(
                 'num_disable_transmit',
