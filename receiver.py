@@ -1101,6 +1101,8 @@ def init(sock: socket.socket, states: States):
     states.max_tries = MAX_TRIES
 
     done_coll.update_many({'logScript': True, 'timestamp': {'$lte': now - 15*60}}, {'$unset': {'logScript': ''}})
+    call_coll.delete_many({})
+    message_coll.delete_many({})
 
     if QRZ_API_KEY:
         logging.info('Checking QRZ Logbook...')
