@@ -20,6 +20,8 @@ if CALLSIGN_EXCEPTION:
     try:
         with open(CALLSIGN_EXCEPTION) as f:
             callsign_exc = f.read().splitlines()
+    except KeyboardInterrupt as e:
+        raise e
     except:
         pass
 
@@ -28,6 +30,8 @@ if RECEIVER_EXCEPTION:
     try:
         with open(RECEIVER_EXCEPTION) as f:
             receiver_exc = f.read().splitlines()
+    except KeyboardInterrupt as e:
+        raise e
     except:
         pass
 
@@ -38,6 +42,8 @@ if VALID_CALLSIGN_LOCATION:
             data = csv.reader(f)
             for r in data:
                 valid_callsign.append(r[0])
+    except KeyboardInterrupt as e:
+        raise e
     except:
         pass
 
@@ -174,6 +180,8 @@ def get_location_data(callsign: str, latest_data: dict = {}) -> dict:
     try:
         location_data = call_info.get_all(callsign)
         location_data['dxcc'] = country_to_dxcc.get(location_data['country'], 0)
+    except KeyboardInterrupt as e:
+        raise e
     except:
         location_data = {}
     
@@ -254,6 +262,8 @@ def get_state_data(callsign: str) -> dict:
                 data['state'] = state_data['state']
             if 'county' in state_data:
                 data['county'] = state_data['county']
+        except KeyboardInterrupt as e:
+            raise e
         except:
             pass
     
@@ -272,6 +282,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
     try:
         packet = wsjtx.ft8_decode(_data)
+    except KeyboardInterrupt as e:
+        raise e
     except (IOError, NotImplementedError):
         logging.exception('Something not right!')
         return
@@ -351,12 +363,16 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 try:
                     with open(CALLSIGN_EXCEPTION) as f:
                         callsign_exc = f.read().splitlines()
+                except KeyboardInterrupt as e:
+                    raise e
                 except:
                     pass
             if RECEIVER_EXCEPTION:
                 try:
                     with open(RECEIVER_EXCEPTION) as f:
                         receiver_exc = f.read().splitlines()
+                except KeyboardInterrupt as e:
+                    raise e
                 except:
                     pass
             states.even_frequencies = [MIN_FREQUENCY, MAX_FREQUENCY]
@@ -474,20 +490,10 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 if not qso_data:
                     logging.info(f'Logging QSO: {matched["to"]} at band {current_band} in mode {current_mode}')
                     states.log_qso()
-                if states.transmitter_started and matched['R73'] != '73':
-                    current_data = call_coll.find_one_and_update(
-                        {'callsign': matched['to'], 'band': current_band, 'mode': current_mode},
-                        {'$set': {'isNewCallsign': False, 'isNewDXCC': False}}
-                    ) or {}
-                else:
-                    current_data = call_coll.find_one_and_delete(
-                        {'callsign': matched['to'], 'band': current_band, 'mode': current_mode}
-                    ) or {}
-                    if current_data:
-                        logging.warning(
-                            f'[DB] [MODE: {current_mode}] [BAND: {current_band}] '
-                            f'[CALLSIGN: {matched["to"]}] Removing {current_data["Message"]}'
-                        )
+                current_data = call_coll.find_one_and_update(
+                    {'callsign': matched['to'], 'band': current_band, 'mode': current_mode},
+                    {'$set': {'isNewCallsign': False, 'isNewDXCC': False}}
+                ) or {}
                 if not qso_data:
                     blacklist_data = {}
                     blacklist_data.update({
@@ -511,9 +517,9 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                         current_data
                     )
                     blacklist_data.update(grid_data)
-                    if current_data.get('grid', None) is None:
-                        current_data.pop('grid')
-                    if call_info2 and current_data.get('country', None) == 'United States':
+                    if blacklist_data.get('grid', None) is None:
+                        blacklist_data.pop('grid')
+                    if call_info2 and blacklist_data.get('country', None) == 'United States':
                         if all([i in current_data for i in ['state', 'county']]):
                             blacklist_data.update({
                                 'state': current_data['state'],
@@ -528,15 +534,26 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                         f'[CALLSIGN: {matched["to"]}] Inserting to blacklist {LOCAL_STATES["current_tx"]}'
                     )
             
-            if matched.get('type', None) == 'R73' and not (states.transmitter_started and matched['R73'] != '73'):
-                result = call_coll.find_one_and_delete(
-                    {'callsign': matched['to'], 'band': current_band, 'mode': current_mode}
-                )
-                if result:
-                    logging.warning(
-                        f'[DB] [MODE: {current_mode}] [BAND: {current_band}] '
-                        f'[CALLSIGN: {matched["to"]}] Removing {result["Message"]}'
+            if matched.get('type', None) == 'R73':
+                if states.transmitter_started and matched['R73'] != '73':
+                    result = call_coll.find_one(
+                        {'callsign': matched['to'], 'band': current_band, 'mode': current_mode}
+                    ) or {}
+                    if result and 3 <= result['importance'] < 3.5:
+                        importance: float = result['importance']/2 + 1.25
+                        call_coll.update_one(
+                            {'callsign': matched['to'], 'band': current_band, 'mode': current_mode},
+                            {'$set': {'importance': importance}}
+                        )
+                else:
+                    result = call_coll.find_one_and_delete(
+                        {'callsign': matched['to'], 'band': current_band, 'mode': current_mode}
                     )
+                    if result:
+                        logging.warning(
+                            f'[DB] [MODE: {current_mode}] [BAND: {current_band}] '
+                            f'[CALLSIGN: {matched["to"]}] Removing {result["Message"]}'
+                        )
             
             states_list = states.get_states(
                 'num_disable_transmit',
@@ -804,7 +821,10 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     f'[DB] [MODE: {data["mode"]}] [BAND: {data["band"]}] '
                     f'[CALLSIGN: {data["callsign"]}] Adding {data["Message"]}'
                 )
-                data['importance'] = 1 + priority_country.get(data['country'], 0)
+                if GRID_HIGHER_THAN_CQ:
+                    data['importance'] = 1.5 + priority_country.get(data['country'], 0)
+                else:
+                    data['importance'] = 1 + priority_country.get(data['country'], 0)
                 if latest_data and latest_data['nextTx'] == data['nextTx']:
                     data['isSpam'] = latest_data.get('isSpam', False)
                 call_coll.update_one(
@@ -866,10 +886,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     f'[DB] [MODE: {data["mode"]}] [BAND: {data["band"]}] '
                     f'[CALLSIGN: {data["callsign"]}] Adding {data["Message"]}'
                 )
-                if GRID_HIGHER_THAN_CQ:
-                    data['importance'] = 1.5 + priority_country.get(data['country'], 0)
-                else:
-                    data['importance'] = 1 + priority_country.get(data['country'], 0)
+                data['importance'] = 1 + priority_country.get(data['country'], 0)
                 data['tries'] = states_list['num_tries_call_busy']
                 if data['isVIPDXCC']:
                     data['tries'] = NUM_TRIES_CALL_BUSY_VIP
@@ -1085,6 +1102,8 @@ def init(sock: socket.socket, states: States):
     states.max_tries = MAX_TRIES
 
     done_coll.update_many({'logScript': True, 'timestamp': {'$lte': now - 15*60}}, {'$unset': {'logScript': ''}})
+    call_coll.delete_many({})
+    message_coll.delete_many({})
 
     if QRZ_API_KEY:
         logging.info('Checking QRZ Logbook...')
@@ -1149,15 +1168,16 @@ def main(sock: socket.socket, states_list: typing.Dict[str, States]):
                     states_list[''].use_RR73()
                 process_wsjt(_data, ip_from, states_list[''])
         except KeyboardInterrupt:
+            logging.exception('User interrupt here!')
+            states_list[''].receiver_started = False
             call_coll.delete_many({})
             message_coll.delete_many({})
-            states_list[''].receiver_started = False
             break
         except:
+            logging.exception('Something not right!')
+            states_list[''].receiver_started = False
             call_coll.delete_many({})
             message_coll.delete_many({})
-            states_list[''].receiver_started = False
-            logging.exception('Something not right!')
             break
     
 if __name__ == '__main__':
