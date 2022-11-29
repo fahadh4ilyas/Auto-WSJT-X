@@ -1165,14 +1165,14 @@ def main(sock: socket.socket, states_list: typing.Dict[str, States]):
                     states_list[''].use_RR73()
                 process_wsjt(_data, ip_from, states_list[''])
         except KeyboardInterrupt:
+            states_list[''].receiver_started = False
             call_coll.delete_many({})
             message_coll.delete_many({})
-            states_list[''].receiver_started = False
             break
         except:
+            states_list[''].receiver_started = False
             call_coll.delete_many({})
             message_coll.delete_many({})
-            states_list[''].receiver_started = False
             logging.exception('Something not right!')
             break
     
