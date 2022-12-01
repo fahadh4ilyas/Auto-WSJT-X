@@ -130,16 +130,20 @@ def main(states_list: typing.Dict[str, States]):
     init(states_list[''])
     while True:
         try:
-            if states_list[''].closed:
+            states_list_local = states_list[''].get_states(
+                'closed',
+                'receiver_started'
+            )
+            if states_list_local['closed']:
                 raise ValueError('WSJT-X Closed!')
+            if not states_list_local['receiver_started']:
+                raise ValueError('Receiver Stopped!')
             if states_list[''].transmitter_paused:
                 raise TransmitterPaused()
             now = datetime.now().timestamp()
             if now%TIMING['FT8']['half'] < TIMING['FT8']['half'] - 0.2:
                 time.sleep(0.02)
                 continue
-            if not states_list[''].receiver_started:
-                raise ValueError('Receiver Stopped!')
             transmitting(now, states_list[''])
             time.sleep(0.5)
         except TransmitterPaused:
