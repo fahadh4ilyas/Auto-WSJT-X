@@ -293,7 +293,8 @@ class WSStatus(_WSPacket):
       'TxEven',
       'CQOnly',
       'GenMsg',
-      'TxHaltClicked'
+      'TxHaltClicked',
+      'NotScript'
     ]
     return ("{} - "+" ".join([i+': '+'{}' for i in keys])).format(
       self.__class__,
@@ -322,7 +323,8 @@ class WSStatus(_WSPacket):
       self.TxEven,
       self.CQOnly,
       self.GenMsg,
-      self.TxHaltClicked)
+      self.TxHaltClicked,
+      self.NotScript)
 
   def _decode(self):
     super()._decode()
@@ -352,6 +354,7 @@ class WSStatus(_WSPacket):
     self._data['CQOnly'] = self._get_bool()
     self._data['GenMsg'] = self._get_string()
     self._data['TxHaltClicked'] = self._get_bool()
+    self._data['NotScript'] = self._get_bool()
 
   @property
   def Frequency(self) -> int:
@@ -456,6 +459,10 @@ class WSStatus(_WSPacket):
   @property
   def TxHaltClicked(self) -> bool:
     return self._data['TxHaltClicked']
+
+  @property
+  def NotScript(self) -> bool:
+    return self._data['NotScript']
 
 
 class WSDecode(_WSPacket):
@@ -583,6 +590,7 @@ class WSReply(_WSPacket):
   * Message                utf8
   * Low confidence         bool
   * Modifiers              quint8
+  * Not Script             bool
   """
 
   def __init__(self, pkt=None):
@@ -600,6 +608,7 @@ class WSReply(_WSPacket):
     self._set_string(self.Message)
     self._set_bool(self._data.get('LowConfidence', False))
     self._set_byte(self._data.get('Modifiers', Modifiers.NoModifier.value))
+    self._set_bool(self._data.get('NotScript', True))
 
   @property
   def Time(self):
@@ -666,6 +675,14 @@ class WSReply(_WSPacket):
   def Modifiers(self, modifier):
     assert isinstance(modifier, Modifiers)
     self._data['Modifiers'] = modifier.value
+
+  @property
+  def NotScript(self):
+    return self._data.get('NotScript')
+
+  @NotScript.setter
+  def NotScript(self, val):
+    self._data['NotScript'] = bool(val)
 
 
 class WSLogged(_WSPacket):

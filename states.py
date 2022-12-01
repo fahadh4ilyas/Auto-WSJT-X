@@ -510,6 +510,7 @@ class States(object):
         packet.DeltaFrequency = decoded_message['DeltaFrequency']
         packet.Mode = decoded_message['Mode']
         packet.Message = decoded_message['Message']
+        packet.NotScript = False
 
         self.sock.sendto(packet.raw(), (self.ip, self.port))
 
