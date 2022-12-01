@@ -396,9 +396,15 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 matched.get('to', None) == matched_latest.get('to', None)
 
             if states.transmitter_started:
+                result = {}
+                if matched.get('type', 'CQ') != 'CQ':
+                    result = call_coll.find_one(
+                        {'callsign': matched['to'], 'band': current_band, 'mode': current_mode}
+                    ) or {}
                 if not isSameMessage:
+                    num_tries = result.get('num_tries', 0) + 1
                     states.change_states(
-                        tries = 1,
+                        tries = num_tries,
                         inactive_count = 1,
                         transmit_counter = 1
                     )
@@ -409,12 +415,6 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                         inactive_count = states_list['inactive_count'] + 1,
                         transmit_counter = states_list['transmit_counter'] + 1
                     )
-
-                result = {}
-                if matched.get('type', 'CQ') != 'CQ':
-                    result = call_coll.find_one(
-                        {'callsign': matched['to'], 'band': current_band, 'mode': current_mode}
-                    ) or {}
 
                 if result.get('nextTx', 'R73') == matched.get('type', None):
                 
@@ -544,9 +544,10 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     ) or {}
                     if result and 3 <= result['importance'] < 3.5:
                         importance: float = result['importance']/2 + 1.25
+                        num_tries = result.get('num_tries', 0) + 1
                         call_coll.update_one(
                             {'callsign': matched['to'], 'band': current_band, 'mode': current_mode},
-                            {'$set': {'importance': importance}}
+                            {'$set': {'importance': importance, 'num_tries': num_tries}}
                         )
                 else:
                     result = call_coll.find_one_and_delete(
@@ -736,6 +737,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
         additional_data = {
             'band': states_list['band'],
             'mode': states_list['mode'],
+            'tries': states_list['max_tries'],
             'max_transmit_count': 2*states_list['max_tries'],
             'num_inactive_before_cut': states_list['num_inactive_before_cut']
         }
