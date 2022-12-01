@@ -300,7 +300,8 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             f'[DX CALLSIGN: {packet.DXCall}] [DX GRID: {packet.DXGrid}] '
             f'[TX ENABLED: {packet.TXEnabled}] [DECODING: {packet.Decoding}] [TRANSMITTING: {packet.Transmitting}] '
             f'[TXDF: {packet.TXdf}] [RXDF: {packet.RXdf}] [TX EVEN: {packet.TxEven}] '
-            f'[FREQUENCY: {packet.Frequency}] [MODE: {packet.Mode}] [LAST TX: {packet.LastTxMsg}]'
+            f'[FREQUENCY: {packet.Frequency}] [MODE: {packet.Mode}] [LAST TX: {packet.LastTxMsg}] '
+            f'[TX HALTED: {packet.TxHaltClicked}]'
         )
         LOCAL_STATES['my_callsign'] = packet.DeCall or ''
         states.change_states(
