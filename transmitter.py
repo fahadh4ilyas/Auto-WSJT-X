@@ -132,13 +132,14 @@ def main(states_list: typing.Dict[str, States]):
         try:
             states_list_local = states_list[''].get_states(
                 'closed',
-                'receiver_started'
+                'receiver_started',
+                'transmitter_paused'
             )
             if states_list_local['closed']:
                 raise ValueError('WSJT-X Closed!')
             if not states_list_local['receiver_started']:
                 raise ValueError('Receiver Stopped!')
-            if states_list[''].transmitter_paused:
+            if states_list_local['transmitter_paused']:
                 raise TransmitterPaused()
             now = datetime.now().timestamp()
             if now%TIMING['FT8']['half'] < TIMING['FT8']['half'] - 0.2:
