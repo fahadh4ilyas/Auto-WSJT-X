@@ -545,12 +545,16 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                                 'band': current_band,
                                 'mode': current_mode,
                                 'importance': {
-                                    '$gte': 3,
+                                    '$gte': 2.75,
                                     '$lt': 3.5
-                                }
+                                },
+                                'expired': False,
+                                'tried': False,
+                                'isSpam': False,
+                                'isEven': result['isEven']
                             }
                         )
-                        num_tries = result['max_transmit_count']//2 - (1 if counting_rr73 else 0)
+                        num_tries = result['tries'] - (1 if counting_rr73 > 1 else 0)
                         call_coll.update_one(
                             {'callsign': matched['to'], 'band': current_band, 'mode': current_mode},
                             {'$set': {'importance': importance, 'tries': num_tries}}
@@ -648,6 +652,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
         additional_data = {
             'band': states_list['band'],
             'mode': states_list['mode'],
+            'tries': states_list['max_tries'],
             'max_transmit_count': 2*states_list['max_tries'],
             'num_inactive_before_cut': states_list['num_inactive_before_cut']
         }
