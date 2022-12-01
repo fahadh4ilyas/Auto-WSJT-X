@@ -392,9 +392,15 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 matched.get('to', None) == matched_latest.get('to', None)
 
             if states.transmitter_started:
+                result = {}
+                if matched.get('type', 'CQ') != 'CQ':
+                    result = call_coll.find_one(
+                        {'callsign': matched['to'], 'band': current_band, 'mode': current_mode}
+                    ) or {}
                 if not isSameMessage:
+                    num_tries = result.get('num_tries', 0) + 1
                     states.change_states(
-                        tries = 1,
+                        tries = num_tries,
                         inactive_count = 1,
                         transmit_counter = 1
                     )
@@ -405,12 +411,6 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                         inactive_count = states_list['inactive_count'] + 1,
                         transmit_counter = states_list['transmit_counter'] + 1
                     )
-
-                result = {}
-                if matched.get('type', 'CQ') != 'CQ':
-                    result = call_coll.find_one(
-                        {'callsign': matched['to'], 'band': current_band, 'mode': current_mode}
-                    ) or {}
 
                 if result.get('nextTx', 'R73') == matched.get('type', None):
                 
@@ -540,24 +540,10 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     ) or {}
                     if result and 3 <= result['importance'] < 3.5:
                         importance: float = result['importance']/2 + 1.25
-                        counting_rr73 = call_coll.count_documents(
-                            {
-                                'band': current_band,
-                                'mode': current_mode,
-                                'importance': {
-                                    '$gte': 2.75,
-                                    '$lt': 3.5
-                                },
-                                'expired': False,
-                                'tried': False,
-                                'isSpam': False,
-                                'isEven': result['isEven']
-                            }
-                        )
-                        num_tries = result['tries'] - (1 if counting_rr73 > 1 else 0)
+                        num_tries = result.get('num_tries', 0) + 1
                         call_coll.update_one(
                             {'callsign': matched['to'], 'band': current_band, 'mode': current_mode},
-                            {'$set': {'importance': importance, 'tries': num_tries}}
+                            {'$set': {'importance': importance, 'num_tries': num_tries}}
                         )
                 else:
                     result = call_coll.find_one_and_delete(
