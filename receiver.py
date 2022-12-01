@@ -540,9 +540,20 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     ) or {}
                     if result and 3 <= result['importance'] < 3.5:
                         importance: float = result['importance']/2 + 1.25
+                        counting_rr73 = call_coll.count_documents(
+                            {
+                                'band': current_band,
+                                'mode': current_mode,
+                                'importance': {
+                                    '$gte': 3,
+                                    '$lt': 3.5
+                                }
+                            }
+                        )
+                        num_tries = result['max_transmit_count']//2 - (1 if counting_rr73 else 0)
                         call_coll.update_one(
                             {'callsign': matched['to'], 'band': current_band, 'mode': current_mode},
-                            {'$set': {'importance': importance}}
+                            {'$set': {'importance': importance, 'tries': num_tries}}
                         )
                 else:
                     result = call_coll.find_one_and_delete(
