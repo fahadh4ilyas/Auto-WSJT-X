@@ -8,6 +8,7 @@ from pyhamtools.frequency import freq_to_band
 from states import States
 from config import *
 from adif_parser import main as adif_parser, db, done_coll, call_info, call_info2, country_to_dxcc, read_from_string
+from log_scraper import main as log_scraper
 import logging
 from logging import handlers
 
@@ -1131,6 +1132,18 @@ def init(sock: socket.socket, states: States):
             result_adif = re.search(r'ADIF=(.*<eor>)', result_str)
             if result_adif:
                 adif_parser(result_adif.group(1))
+    elif QRZ_USERNAME and QRZ_PASSWORD:
+        logging.info('Scraping QRZ Logbook...')
+        previous = None
+        if NUM_DAYS_LOG:
+            now = datetime.now()
+            previous = (now - timedelta(days=NUM_DAYS_LOG)).date()
+            now_str = now.strftime('%Y-%m-%d')
+            previous_str = previous.strftime('%Y-%m-%d')
+            logging.info(f'Getting log from {previous_str} to {now_str}...')
+        result_adif_list = log_scraper(QRZ_USERNAME, QRZ_PASSWORD, previous)
+        if result_adif_list:
+            adif_parser('\n'.join(result_adif_list))
     
     if MULTICAST:
         sock.bind(('', WSJTX_PORT))
