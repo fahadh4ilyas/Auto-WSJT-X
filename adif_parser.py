@@ -1,4 +1,6 @@
-import json, requests, re, typing
+import json, requests, re, typing, warnings
+from bs4 import XMLParsedAsHTMLWarning
+warnings.filterwarnings(action='ignore', category=XMLParsedAsHTMLWarning)
 from pyhamtools import LookupLib, Callinfo
 from pyhamtools.frequency import freq_to_band
 from tqdm import tqdm
@@ -126,7 +128,7 @@ def main(data_str: str):
         }
 
         try:
-            inserted_data['band'] = freq_to_band(d['FREQ']*1000)['band']
+            inserted_data['band'] = freq_to_band(float(d['FREQ'])*1000)['band']
         except:
             inserted_data['band'] = string_band_to_number(d['BAND'])
             
