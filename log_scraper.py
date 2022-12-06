@@ -155,12 +155,15 @@ def main(username: str, password: str, min_date: date = None) -> typing.List[str
     return log_list
 
 if __name__ == '__main__':
-    from config import *
-    from adif_parser import main as adif_parser
+    from config import QRZ_USERNAME, QRZ_PASSWORD
+    from adif_parser import main as adif_parser, done_coll
     
     if QRZ_USERNAME and QRZ_PASSWORD:
         print('Start scraping...')
         result_adif_list = main(QRZ_USERNAME, QRZ_PASSWORD)
+        print('DONE!')
+        print('Emptying the database...')
+        done_coll.delete_many({})
         print('DONE!')
         print('Start putting to database...')
         if result_adif_list:
