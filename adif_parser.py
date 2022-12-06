@@ -188,15 +188,19 @@ def main(data_str: str):
         )
 
 if __name__ == '__main__':
-    print('Starting...')
+    print('Start getting the logs...')
     if QRZ_API_KEY:
         res = requests.post('https://logbook.qrz.com/api',data=f'KEY={QRZ_API_KEY}&ACTION=FETCH')
         if res.ok:
             result_str = res.text.replace('&lt;','<').replace('&gt;','>').replace('\n', ' ')
             result_adif = re.search(r'ADIF=(.*<eor>)', result_str)
             if result_adif:
+                print('DONE!')
                 data_str = result_adif.group(1)
+                print('Emptying the database...')
                 done_coll.delete_many({})
+                print('DONE!')
+                print('Start putting to database...')
                 main(data_str)
     elif LOG_LOCATION:
         with open(LOG_LOCATION, encoding='latin-1') as f:
