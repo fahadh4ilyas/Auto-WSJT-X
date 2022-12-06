@@ -51,6 +51,17 @@ VALIDATE_CALLSIGN = True
 # restart receiver + transmitter
 WORK_ON_UNCONFIRMED_QSO = False
 
+# Set the date where unconfirmed qso is excluded from blacklist
+# The date format is YYYY-MM-DD
+# Both end of date is affected
+# Set None to 'from' means from beginning of time
+# Set None to 'to' means until now
+# Set None to both means don't apply this configuration
+EXCLUDE_UNCONFIRMED_QSO_DATE_RANGE = {
+    'from': None,
+    'to': None
+}
+
 # Number of inactive time of callsign before stop replying
 # Set to 0 to disable this feature
 # MUST BE LESS THAN MAX_TRIES

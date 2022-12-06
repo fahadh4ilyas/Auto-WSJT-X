@@ -520,7 +520,6 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     blacklist_data.update({
                         'confirmed': True,
                         'logScript': True,
-                        'fromScript': True,
                         'timestamp': now,
                         'callsign': matched['to'],
                         'band': current_band,
@@ -1100,7 +1099,10 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
 
         done_coll.update_one(
             {'callsign': logged_data['CALL'], 'logScript': True, **states_list},
-            {'$set': {'QSOID': f'{logged_data["QSO_DATE"]}{logged_data["TIME_ON"][:4]}-{logged_data["QSO_DATE_OFF"]}{logged_data["TIME_OFF"][:4]}'}}
+            {'$set': {
+                'QSOID': f'{logged_data["QSO_DATE"]}{logged_data["TIME_ON"][:4]}-{logged_data["QSO_DATE_OFF"]}{logged_data["TIME_OFF"][:4]}',
+                'timestamp': datetime.strptime(f'{logged_data["QSO_DATE_OFF"]}{logged_data["TIME_OFF"][:4]}+0000', '%Y%m%d%H%M%z').timestamp()
+            }}
         )
 
     elif isinstance(packet, wsjtx.WSClose):
@@ -1130,9 +1132,6 @@ def init(sock: socket.socket, states: States):
 
     if QRZ_API_KEY:
         logging.info('Checking QRZ Logbook...')
-        if WORK_ON_UNCONFIRMED_QSO:
-            logging.info('Removing unconfirmed log from blacklist...')
-            done_coll.delete_many({'$or': [{'confirmed': False}, {'fromScript': True}]})
         if NUM_DAYS_LOG:
             now = datetime.now()
             previous = now - timedelta(days=NUM_DAYS_LOG)
@@ -1152,6 +1151,29 @@ def init(sock: socket.socket, states: States):
             result_adif = re.search(r'ADIF=(.*<eor>)', result_str)
             if result_adif:
                 adif_parser(result_adif.group(1))
+    
+    from_date = EXCLUDE_UNCONFIRMED_QSO_DATE_RANGE.get('from', None)
+    to_date = EXCLUDE_UNCONFIRMED_QSO_DATE_RANGE.get('to', None)
+    if not (from_date is None and to_date is None):
+        from_date = datetime.strptime(from_date or datetime.fromtimestamp(0).strftime('%Y-%m-%d'), '%Y-%m-%d')
+        to_date = datetime.strptime(to_date or datetime.now().strftime('%Y-%m-%d'), '%Y-%m-%d')
+
+        delete_result = done_coll.delete_many(
+            {
+                'timestamp': {
+                    'gte': from_date.timestamp(),
+                    'lt': (to_date + timedelta(days=1)).timestamp()
+                },
+                'confirmed': False
+            }
+        )
+
+        if delete_result.deleted_count:
+            logging.info(f'[DB] Deleting unconfirmed logs from {from_date} to {to_date}: {delete_result.deleted_count} logs')
+    
+    if WORK_ON_UNCONFIRMED_QSO:
+        logging.info('[DB] Removing unconfirmed log from blacklist...')
+        done_coll.delete_many({'confirmed': False})
     
     if MULTICAST:
         sock.bind(('', WSJTX_PORT))
