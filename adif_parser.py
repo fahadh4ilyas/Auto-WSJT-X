@@ -190,7 +190,7 @@ def main(data_str: str):
 if __name__ == '__main__':
     from log_scraper import main as log_scraper
 
-    print('Start querying logs...')
+    print('Start getting the logs...')
     if QRZ_API_KEY:
         res = requests.post('https://logbook.qrz.com/api',data=f'KEY={QRZ_API_KEY}&ACTION=FETCH')
         if res.ok:
