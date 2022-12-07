@@ -672,7 +672,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             data['max_transmit_count'] = (states_list['aggresive_level']+2)*MAX_TRIES_VIP
             data['num_inactive_before_cut'] = NUM_INACTIVE_BEFORE_CUT_VIP
 
-        if states_list['num_inactive_before_cut'] and data['callsign'] == LOCAL_STATES['current_callsign']:
+        if data['num_inactive_before_cut'] and data['callsign'] == LOCAL_STATES['current_callsign']:
             states.inactive_count = 0
 
         if data['type'] == 'CQ':
@@ -731,6 +731,10 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             if data['isNewDXCC'] and states_list['aggresive_level']:
                 data['importance'] += 0.5
                 data['tries'] = (states_list['aggresive_level']+1)*states_list['max_tries']
+            logging.info(
+                f'[DB] [NEW CALLSIGN: {data["isNewCallsign"]}] '
+                f'[IMPORTANCE: {data["importance"]}] [CALLSIGN: {data["callsign"]}]'
+            )
             call_coll.update_one(
                 {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
                 {'$set': data},
@@ -745,6 +749,7 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     if states.transmitting:
                         matched = parsing_message(LOCAL_STATES['current_tx'])
                         if matched['to'] == data['callsign']:
+                            logging.warning(f'[TX] Halting the transmitting: {LOCAL_STATES["current_tx"]}')
                             states.halt_transmit()
                     return
 
@@ -819,6 +824,10 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                 if states_list['aggresive_level'] and data['isNewDXCC']:
                     data['importance'] += 0.5
                     data['tries'] = (states_list['aggresive_level']+1)*states_list['max_tries']
+                logging.info(
+                    f'[DB] [NEW CALLSIGN: {data["isNewCallsign"]}] '
+                    f'[IMPORTANCE: {data["importance"]}] [CALLSIGN: {data["callsign"]}]'
+                )
                 call_coll.update_one(
                     {'callsign': data['callsign'], 'band': data['band'], 'mode': data['mode']},
                     {'$set': data},
@@ -912,6 +921,10 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     f'[CALLSIGN: {data["callsign"]}] Adding {data["Message"]}'
                 )
                 data['importance'] = 1 + priority_country.get(data['country'], 0)
+                logging.info(
+                    f'[DB] [NEW CALLSIGN: {data["isNewCallsign"]}] '
+                    f'[IMPORTANCE: {data["importance"]}] [CALLSIGN: {data["callsign"]}]'
+                )
                 data['tries'] = states_list['num_tries_call_busy']
                 if data['isVIPDXCC']:
                     data['tries'] = NUM_TRIES_CALL_BUSY_VIP
@@ -1006,6 +1019,10 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     f'[CALLSIGN: {data["callsign"]}] Adding {data["Message"]}'
                 )
                 data['importance'] = 1 + priority_country.get(data['country'], 0)
+                logging.info(
+                    f'[DB] [NEW CALLSIGN: {data["isNewCallsign"]}] '
+                    f'[IMPORTANCE: {data["importance"]}] [CALLSIGN: {data["callsign"]}]'
+                )
                 data['tries'] = states_list['num_tries_call_busy']
                 if data['isVIPDXCC']:
                     data['tries'] = NUM_TRIES_CALL_BUSY_VIP
@@ -1100,6 +1117,10 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
                     f'[CALLSIGN: {data["callsign"]}] Adding {data["Message"]}'
                 )
                 data['importance'] = 1 + priority_country.get(data['country'], 0)
+                logging.info(
+                    f'[DB] [NEW CALLSIGN: {data["isNewCallsign"]}] '
+                    f'[IMPORTANCE: {data["importance"]}] [CALLSIGN: {data["callsign"]}]'
+                )
                 data['tries'] = states_list['num_tries_call_busy']
                 if data['isVIPDXCC']:
                     data['tries'] = NUM_TRIES_CALL_BUSY_VIP
