@@ -837,6 +837,10 @@ def process_wsjt(_data: bytes, ip_from: tuple, states: States):
             if data['to'] == LOCAL_STATES['my_callsign']:
 
                 if data['R73'] == '73':
+                    if states.transmitting:
+                        matched = parsing_message(LOCAL_STATES['current_tx'])
+                        if matched['to'] == data['callsign']:
+                            states.halt_transmit()
                     return
 
                 else:
@@ -1233,9 +1237,21 @@ def init(sock: socket.socket, states: States):
     
     from_date = EXCLUDE_UNCONFIRMED_QSO_DATE_RANGE.get('from', None)
     to_date = EXCLUDE_UNCONFIRMED_QSO_DATE_RANGE.get('to', None)
-    if not (from_date is None and to_date is None):
-        from_date = datetime.strptime(from_date or datetime.fromtimestamp(0).strftime('%Y-%m-%d'), '%Y-%m-%d')
-        to_date = datetime.strptime(to_date or datetime.now().strftime('%Y-%m-%d'), '%Y-%m-%d')
+    if WORK_ON_UNCONFIRMED_QSO:
+        logging.info('[DB] Removing unconfirmed log from blacklist...')
+        done_coll.delete_many({'confirmed': False})
+    elif not (from_date is None and to_date is None):
+        def get_datetime(config_data: typing.Union[str, int, None], default: datetime) -> datetime:
+            if config_data is None:
+                return default
+            
+            if isinstance(config_data, str):
+                return datetime.strptime(config_data, '%Y-%m-%d')
+            
+            if isinstance(config_data, int):
+                return datetime.strptime(datetime.now().strftime('%Y-%m-%d'), '%Y-%m-%d') - timedelta(days=config_data)
+        from_date = get_datetime(from_date, datetime.strptime(datetime.fromtimestamp(0).strftime('%Y-%m-%d'), '%Y-%m-%d'))
+        to_date = get_datetime(to_date, datetime.strptime(datetime.now().strftime('%Y-%m-%d'), '%Y-%m-%d'))
 
         delete_result = done_coll.delete_many(
             {
@@ -1249,10 +1265,6 @@ def init(sock: socket.socket, states: States):
 
         if delete_result.deleted_count:
             logging.info(f'[DB] Deleting unconfirmed logs from {from_date} to {to_date}: {delete_result.deleted_count} logs')
-    
-    if WORK_ON_UNCONFIRMED_QSO:
-        logging.info('[DB] Removing unconfirmed log from blacklist...')
-        done_coll.delete_many({'confirmed': False})
     
     if MULTICAST:
         sock.bind(('', WSJTX_PORT))
