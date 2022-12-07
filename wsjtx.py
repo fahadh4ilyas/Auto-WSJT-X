@@ -28,8 +28,8 @@ WS_CLIENTID = 'EBLINK'
 
 callsign_regex = r'(?P<callsign>\w+)(|/\w+)'
 receiver_regex = r'(?P<to>\w+|...)(|/\w+)'
-callsign_regex = r'(?P<callsign>(?P<prefixed_callsign>(?:(?P<prefix>[A-Z0-9]{1,4})/)?(?:\d?[A-Z]{1,2}\d(?:[A-Z]{1,4}|\d{3}|\d{1,3}[A-Z])[A-Z]{0,5}))(?:/(?P<suffix>[A-Z0-9]{1,4}))?(?:/(?P<suffix2>[A-Z0-9]{1,4}))?(?:(?P<suffix3>\-\d{1,3}))?)'
-receiver_regex = r'(?P<to>(?P<prefixed_to>(?:(?P<prefix_to>[A-Z0-9]{1,4})/)?(?:(?:\d?[A-Z]{1,2}\d(?:[A-Z]{1,4}|\d{3}|\d{1,3}[A-Z])[A-Z]{0,5})|...))(?:/(?P<suffix_to>[A-Z0-9]{1,4}))?(?:/(?P<suffix2_to>[A-Z0-9]{1,4}))?(?:(?P<suffix3_to>\-\d{1,3}))?)'
+callsign_regex = r'(?P<callsign>(?P<prefixed_callsign>(?:(?P<prefix>[A-Z0-9]{1,4})/)?(?:\d?[A-Z]{1,2}\d(?:[A-Z]{1,2}[A-Z0-9]{1,2}|\d{3}|\d{1,3}[A-Z])[A-Z]{0,5}))(?:/(?P<suffix>[A-Z0-9]{1,4}))?(?:/(?P<suffix2>[A-Z0-9]{1,4}))?(?:(?P<suffix3>\-\d{1,3}))?)'
+receiver_regex = r'(?P<to>(?P<prefixed_to>(?:(?P<prefix_to>[A-Z0-9]{1,4})/)?(?:(?:\d?[A-Z]{1,2}\d(?:[A-Z]{1,2}[A-Z0-9]{1,2}|\d{3}|\d{1,3}[A-Z])[A-Z]{0,5})|...))(?:/(?P<suffix_to>[A-Z0-9]{1,4}))?(?:/(?P<suffix2_to>[A-Z0-9]{1,4}))?(?:(?P<suffix3_to>\-\d{1,3}))?)'
 
 call_types: typing.Dict[str, re.Pattern] = {
   "CQ": re.compile(r'^<?CQ>? (?:<?(?P<extra>.*)>? )?<?'+callsign_regex+r'>?(?: <?(?P<grid>[A-Z]{2}[0-9]{2})>?)?'),
