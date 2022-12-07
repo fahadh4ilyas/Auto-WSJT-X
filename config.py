@@ -47,15 +47,18 @@ GRID_HIGHER_THAN_CQ = True
 # restart receiver + transmitter
 VALIDATE_CALLSIGN = True
 
-# Set to True to add message in queue in log is not confirmed
+# Set to True to exclude unconfirmed qso from blacklist
+# If this True, EXCLUDE_UNCONFIRMED_QSO_DATE_RANGE will be ignored
 # restart receiver + transmitter
 WORK_ON_UNCONFIRMED_QSO = False
 
 # Set the date where unconfirmed qso is excluded from blacklist
 # The date format is YYYY-MM-DD
+# If the value is non-negative integer,
+# will be interpret as today minus that number of days
 # Both end of date is affected
 # Set None to 'from' means from beginning of time
-# Set None to 'to' means until now
+# Set None to 'to' means until today
 # Set None to both means don't apply this configuration
 EXCLUDE_UNCONFIRMED_QSO_DATE_RANGE = {
     'from': None,
